@@ -193,8 +193,34 @@ export async function undelegateEnergy(
 }
 
 /**
+ * Envía TRX desde la master wallet a una dirección
+ * Usado como fallback cuando no hay suficiente energía para delegar
+ */
+async function sendTrxForFees(
+  tronWeb: TronWeb,
+  masterPrivateKey: string,
+  toAddress: string,
+  amountTrx: number
+): Promise<{ success: boolean; txHash?: string; error?: string }> {
+  try {
+    tronWeb.setPrivateKey(masterPrivateKey);
+    const amountSun = Math.floor(amountTrx * 1_000_000);
+
+    const tx = await tronWeb.trx.sendTransaction(toAddress, amountSun);
+
+    if (tx.result) {
+      console.log(`Sent ${amountTrx} TRX to ${toAddress} for fees: ${tx.txid}`);
+      return { success: true, txHash: tx.txid };
+    }
+    return { success: false, error: "TRX send failed" };
+  } catch (error: any) {
+    return { success: false, error: error.message || "Failed to send TRX" };
+  }
+}
+
+/**
  * Sweep USDT usando la energía de la wallet maestra
- * Este método deriva la key del comercio, delega energía, hace sweep, recupera energía
+ * Fallback: si no hay suficiente energía, envía TRX para cubrir fees
  */
 export async function sweepWithMasterEnergy(
   tronWeb: TronWeb,
@@ -206,59 +232,68 @@ export async function sweepWithMasterEnergy(
   const merchantAddress = tronWeb.address.fromPrivateKey(merchantPrivateKey);
 
   try {
-    // 1. Verificar que la wallet maestra tiene energía
     const masterAddress = tronWeb.address.fromPrivateKey(masterPrivateKey);
     const resources = await hasEnoughResources(tronWeb, masterAddress);
 
-    if (!resources.hasEnergy) {
-      return { success: false, error: "Master wallet has insufficient energy" };
+    let usedEnergyDelegation = false;
+
+    if (resources.hasEnergy) {
+      // Opción A: Delegar energía (gratis, usa staking)
+      console.log(`Delegating energy to ${merchantAddress}...`);
+      const delegateResult = await delegateEnergy(
+        tronWeb,
+        masterPrivateKey,
+        merchantAddress,
+        ENERGY_FOR_TRC20_TRANSFER * 2
+      );
+
+      if (delegateResult.success) {
+        usedEnergyDelegation = true;
+        // Esperar para que la delegación se propague
+        await new Promise(resolve => setTimeout(resolve, 3000));
+      } else {
+        console.warn("Energy delegation failed:", delegateResult.error);
+      }
     }
 
-    // 2. Delegar energía a la wallet del comercio
-    console.log(`Delegating energy to ${merchantAddress}...`);
-    const delegateResult = await delegateEnergy(
-      tronWeb,
-      masterPrivateKey,
-      merchantAddress,
-      ENERGY_FOR_TRC20_TRANSFER * 2 // Delegamos el doble por seguridad
-    );
-
-    if (!delegateResult.success) {
-      // Si falla la delegación, intentamos el sweep de todas formas
-      // (la wallet del comercio podría tener energía propia)
-      console.warn("Energy delegation failed, attempting sweep anyway:", delegateResult.error);
+    if (!usedEnergyDelegation) {
+      // Opción B: Enviar TRX para cubrir fees directamente (~30 TRX)
+      console.log(`Insufficient energy, sending TRX to ${merchantAddress} for fees...`);
+      const trxResult = await sendTrxForFees(tronWeb, masterPrivateKey, merchantAddress, 30);
+      if (!trxResult.success) {
+        return { success: false, error: `Failed to fund fees: ${trxResult.error}` };
+      }
+      // Esperar a que la TX de TRX se confirme
+      await new Promise(resolve => setTimeout(resolve, 4000));
     }
 
-    // 3. Esperar un momento para que la delegación se propague
-    await new Promise(resolve => setTimeout(resolve, 3000));
-
-    // 4. Ejecutar el sweep
+    // Ejecutar el sweep
     console.log(`Sweeping ${amount} USDT from ${merchantAddress} to ${toAddress}...`);
     tronWeb.setPrivateKey(merchantPrivateKey);
 
     const contract = await tronWeb.contract().at(USDT_CONTRACT);
-
-    // Convertir amount a base units (6 decimales para USDT)
     const amountInBaseUnits = BigInt(Math.floor(parseFloat(amount) * 1_000_000));
 
     const tx = await contract.methods
       .transfer(toAddress, amountInBaseUnits.toString())
       .send({
-        feeLimit: 50_000_000, // 50 TRX máximo (solo como respaldo)
+        feeLimit: 100_000_000, // 100 TRX máximo
         shouldPollResponse: true,
       });
 
     console.log(`Sweep successful: ${tx}`);
 
-    // 5. Recuperar la energía delegada (en background, no bloqueamos)
-    setTimeout(async () => {
-      try {
-        await undelegateEnergy(tronWeb, masterPrivateKey, merchantAddress, ENERGY_FOR_TRC20_TRANSFER * 2);
-        console.log(`Energy undelegated from ${merchantAddress}`);
-      } catch (err) {
-        console.warn("Failed to undelegate energy (will recover naturally):", err);
-      }
-    }, 5000);
+    // Recuperar energía delegada en background
+    if (usedEnergyDelegation) {
+      setTimeout(async () => {
+        try {
+          await undelegateEnergy(tronWeb, masterPrivateKey, merchantAddress, ENERGY_FOR_TRC20_TRANSFER * 2);
+          console.log(`Energy undelegated from ${merchantAddress}`);
+        } catch (err) {
+          console.warn("Failed to undelegate energy (will recover naturally):", err);
+        }
+      }, 5000);
+    }
 
     return {
       success: true,
