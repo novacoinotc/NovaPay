@@ -24,11 +24,11 @@ const statusConfig: Record<
   string,
   { label: string; color: string; icon: React.ElementType }
 > = {
-  PENDING: { label: "Pendiente", color: "text-accent-400 bg-accent-500/10", icon: Clock },
+  PENDING: { label: "Pendiente", color: "text-zinc-300 bg-white/[0.06]", icon: Clock },
   CONFIRMED: { label: "Confirmado", color: "text-primary-400 bg-primary-500/10", icon: CheckCircle },
-  SWEEPING: { label: "Procesando", color: "text-purple-400 bg-purple-500/10", icon: ArrowRight },
-  SWEPT: { label: "Movido", color: "text-indigo-400 bg-indigo-500/10", icon: ArrowRight },
-  CONVERTING: { label: "Convirtiendo", color: "text-orange-400 bg-orange-500/10", icon: ArrowRight },
+  SWEEPING: { label: "Procesando", color: "text-primary-300 bg-primary-500/10", icon: ArrowRight },
+  SWEPT: { label: "Movido", color: "text-accent-400 bg-accent-500/10", icon: ArrowRight },
+  CONVERTING: { label: "Convirtiendo", color: "text-zinc-300 bg-white/[0.06]", icon: ArrowRight },
   CREDITED: { label: "Acreditado", color: "text-emerald-400 bg-emerald-500/10", icon: CheckCircle },
   FAILED: { label: "Fallido", color: "text-red-400 bg-red-500/10", icon: XCircle },
 };

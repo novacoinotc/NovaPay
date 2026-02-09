@@ -3,12 +3,12 @@ import { ArrowRight, Shield, Zap, DollarSign, ChevronRight } from "lucide-react"
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-[#09090b] relative overflow-hidden">
+    <div className="min-h-screen bg-[#070b14] relative overflow-hidden">
       {/* Background effects */}
       <div className="fixed inset-0 bg-grid pointer-events-none" />
-      <div className="orb orb-purple w-[600px] h-[600px] -top-48 -left-48 animate-float-slow" />
-      <div className="orb orb-amber w-[400px] h-[400px] top-1/3 -right-32 animate-float" />
-      <div className="orb orb-pink w-[300px] h-[300px] bottom-0 left-1/4 animate-float-slower" />
+      <div className="orb orb-navy w-[600px] h-[600px] -top-48 -left-48 animate-float-slow" />
+      <div className="orb orb-blue w-[400px] h-[400px] top-1/3 -right-32 animate-float" />
+      <div className="orb orb-ice w-[300px] h-[300px] bottom-0 left-1/4 animate-float-slower" />
 
       {/* Header */}
       <header className="relative z-20 border-b border-white/[0.06]">
@@ -106,8 +106,8 @@ export default function HomePage() {
 
               <div className="gradient-border-card">
                 <div className="p-8 text-center">
-                  <div className="mx-auto h-14 w-14 rounded-2xl bg-accent-500/10 border border-accent-500/20 flex items-center justify-center mb-6">
-                    <DollarSign className="h-7 w-7 text-accent-400" />
+                  <div className="mx-auto h-14 w-14 rounded-2xl bg-primary-500/10 border border-primary-500/20 flex items-center justify-center mb-6">
+                    <DollarSign className="h-7 w-7 text-primary-300" />
                   </div>
                   <h3 className="text-lg font-semibold text-zinc-100">
                     Retiros SPEI
@@ -121,8 +121,8 @@ export default function HomePage() {
 
               <div className="gradient-border-card">
                 <div className="p-8 text-center">
-                  <div className="mx-auto h-14 w-14 rounded-2xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center mb-6">
-                    <Shield className="h-7 w-7 text-pink-400" />
+                  <div className="mx-auto h-14 w-14 rounded-2xl bg-white/[0.06] border border-white/[0.1] flex items-center justify-center mb-6">
+                    <Shield className="h-7 w-7 text-white" />
                   </div>
                   <h3 className="text-lg font-semibold text-zinc-100">
                     Seguro y confiable
@@ -139,7 +139,7 @@ export default function HomePage() {
 
         {/* CTA */}
         <div className="relative py-24 border-t border-white/[0.06]">
-          <div className="orb orb-purple w-[500px] h-[500px] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+          <div className="orb orb-navy w-[500px] h-[500px] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center relative z-10">
             <h2 className="text-3xl sm:text-4xl font-bold text-zinc-100">
               ¿Listo para aceptar pagos en crypto?

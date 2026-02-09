@@ -68,11 +68,11 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#09090b] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+    <div className="min-h-screen bg-[#070b14] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
       {/* Background effects */}
       <div className="fixed inset-0 bg-grid pointer-events-none" />
-      <div className="orb orb-purple w-[500px] h-[500px] -top-32 -left-32 animate-float-slow" />
-      <div className="orb orb-amber w-[300px] h-[300px] -bottom-16 -right-16 animate-float" />
+      <div className="orb orb-navy w-[500px] h-[500px] -top-32 -left-32 animate-float-slow" />
+      <div className="orb orb-blue w-[300px] h-[300px] -bottom-16 -right-16 animate-float" />
 
       <div className="max-w-lg w-full relative z-10 animate-fade-in-up">
         <div className="text-center mb-8">

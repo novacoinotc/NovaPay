@@ -31,16 +31,16 @@ export default function DashboardLayout({
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen bg-[#09090b] flex items-center justify-center">
+      <div className="min-h-screen bg-[#070b14] flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#09090b] bg-grid">
+    <div className="min-h-screen bg-[#070b14] bg-grid">
       {/* Sidebar */}
-      <div className="fixed inset-y-0 left-0 w-64 bg-[#09090b]/95 backdrop-blur-xl border-r border-white/[0.06] z-20">
+      <div className="fixed inset-y-0 left-0 w-64 bg-[#070b14]/95 backdrop-blur-xl border-r border-white/[0.06] z-20">
         <div className="flex h-16 items-center px-6 border-b border-white/[0.06]">
           <Link href="/dashboard" className="text-xl font-bold gradient-text">
             NovaPay
@@ -50,7 +50,7 @@ export default function DashboardLayout({
         {/* User info */}
         <div className="px-4 py-4 border-b border-white/[0.06]">
           <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center text-white text-xs font-bold">
+            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary-500 to-primary-300 flex items-center justify-center text-white text-xs font-bold">
               {session?.user?.businessName?.charAt(0) || "N"}
             </div>
             <div className="min-w-0">
@@ -100,7 +100,7 @@ export default function DashboardLayout({
 
       {/* Main content */}
       <div className="pl-64">
-        <header className="bg-[#09090b]/80 backdrop-blur-xl border-b border-white/[0.06] h-16 flex items-center px-8 sticky top-0 z-10">
+        <header className="bg-[#070b14]/80 backdrop-blur-xl border-b border-white/[0.06] h-16 flex items-center px-8 sticky top-0 z-10">
           <h1 className="text-lg font-semibold text-zinc-100">
             {navigation.find((n) => pathname.startsWith(n.href))?.name || "Dashboard"}
           </h1>

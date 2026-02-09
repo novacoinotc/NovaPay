@@ -88,7 +88,7 @@ export default function WalletsPage() {
       const dataUrl = await QRCode.toDataURL(address, {
         width: 256,
         margin: 2,
-        color: { dark: "#fafafa", light: "#09090b" },
+        color: { dark: "#fafafa", light: "#070b14" },
       });
       setQrDataUrl(dataUrl);
     } catch (error) {

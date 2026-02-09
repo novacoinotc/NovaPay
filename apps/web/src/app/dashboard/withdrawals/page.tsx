@@ -34,7 +34,7 @@ const statusConfig: Record<
   string,
   { label: string; color: string; icon: React.ElementType }
 > = {
-  PENDING: { label: "Pendiente", color: "text-accent-400 bg-accent-500/10", icon: Clock },
+  PENDING: { label: "Pendiente", color: "text-zinc-300 bg-white/[0.06]", icon: Clock },
   PROCESSING: { label: "Procesando", color: "text-primary-400 bg-primary-500/10", icon: ArrowRight },
   COMPLETED: { label: "Completado", color: "text-emerald-400 bg-emerald-500/10", icon: CheckCircle },
   FAILED: { label: "Fallido", color: "text-red-400 bg-red-500/10", icon: XCircle },

@@ -4,22 +4,22 @@
 
 @layer base {
   :root {
-    --background: 260 20% 4%;
+    --background: 222 47% 4%;
     --foreground: 0 0% 98%;
-    --card: 260 15% 7%;
+    --card: 222 30% 7%;
     --card-foreground: 0 0% 98%;
-    --primary: 270 91% 65%;
+    --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 260 10% 12%;
+    --secondary: 222 15% 12%;
     --secondary-foreground: 0 0% 98%;
-    --muted: 260 10% 14%;
-    --muted-foreground: 240 5% 50%;
-    --accent: 38 92% 50%;
+    --muted: 222 15% 14%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 199 89% 48%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --border: 260 10% 14%;
-    --ring: 270 91% 65%;
+    --border: 222 15% 14%;
+    --ring: 217 91% 60%;
     --radius: 0.75rem;
   }
 }
@@ -29,7 +29,7 @@
     @apply border-border;
   }
   body {
-    @apply bg-[#09090b] text-zinc-50 font-sans antialiased;
+    @apply bg-[#070b14] text-zinc-50 font-sans antialiased;
   }
 }
 
@@ -46,12 +46,12 @@
   /* Animated gradient border card */
   .gradient-border-card {
     @apply relative rounded-2xl p-[1px] overflow-hidden;
-    background: linear-gradient(135deg, rgba(168,85,247,0.3), rgba(251,191,36,0.3), rgba(168,85,247,0.3));
+    background: linear-gradient(135deg, rgba(59,130,246,0.4), rgba(14,165,233,0.2), rgba(59,130,246,0.4));
     background-size: 200% 200%;
     animation: gradient-x 3s ease infinite;
   }
   .gradient-border-card > div {
-    @apply bg-[#0e0e12] rounded-2xl;
+    @apply bg-[#0a0f1a] rounded-2xl;
   }
 
   /* Gradient text */
@@ -60,7 +60,7 @@
   }
   .gradient-text-hero {
     @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, #c084fc 0%, #a855f7 30%, #fbbf24 70%, #f59e0b 100%);
+    background-image: linear-gradient(135deg, #60a5fa 0%, #3b82f6 30%, #e0f2fe 70%, #ffffff 100%);
     background-size: 200% auto;
     animation: gradient-x 4s ease infinite;
   }
@@ -69,14 +69,14 @@
   .orb {
     @apply absolute rounded-full blur-3xl opacity-20 pointer-events-none;
   }
-  .orb-purple {
-    @apply bg-primary-500;
+  .orb-navy {
+    @apply bg-primary-600;
   }
-  .orb-amber {
-    @apply bg-accent-400;
+  .orb-blue {
+    @apply bg-accent-500;
   }
-  .orb-pink {
-    @apply bg-pink-500;
+  .orb-ice {
+    @apply bg-primary-300;
   }
 
   /* Button styles */
@@ -123,8 +123,8 @@
   /* Subtle grid background */
   .bg-grid {
     background-image:
-      linear-gradient(rgba(168, 85, 247, 0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(168, 85, 247, 0.03) 1px, transparent 1px);
+      linear-gradient(rgba(59, 130, 246, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(59, 130, 246, 0.03) 1px, transparent 1px);
     background-size: 60px 60px;
   }
 

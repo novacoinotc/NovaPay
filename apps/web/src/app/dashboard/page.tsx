@@ -111,8 +111,8 @@ export default function DashboardPage() {
 
         <div className="glass-card p-6">
           <div className="flex items-center gap-4">
-            <div className="h-12 w-12 rounded-2xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center">
-              <ArrowUpFromLine className="h-6 w-6 text-pink-400" />
+            <div className="h-12 w-12 rounded-2xl bg-accent-500/10 border border-accent-500/20 flex items-center justify-center">
+              <ArrowUpFromLine className="h-6 w-6 text-accent-400" />
             </div>
             <div>
               <p className="text-sm text-zinc-400">Retiros realizados</p>
@@ -128,8 +128,8 @@ export default function DashboardPage() {
 
         <div className="glass-card p-6">
           <div className="flex items-center gap-4">
-            <div className="h-12 w-12 rounded-2xl bg-accent-500/10 border border-accent-500/20 flex items-center justify-center">
-              <TrendingUp className="h-6 w-6 text-accent-400" />
+            <div className="h-12 w-12 rounded-2xl bg-white/[0.06] border border-white/[0.1] flex items-center justify-center">
+              <TrendingUp className="h-6 w-6 text-white" />
             </div>
             <div>
               <p className="text-sm text-zinc-400">Volumen total</p>
