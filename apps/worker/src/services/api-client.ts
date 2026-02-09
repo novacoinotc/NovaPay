@@ -1,6 +1,6 @@
 import { API_ENDPOINTS } from "@novapay/shared";
 
-const API_BASE_URL = process.env.API_BASE_URL || "http://localhost:3000";
+const API_BASE_URL = process.env.WEB_APP_URL || process.env.API_BASE_URL || "http://localhost:3000";
 const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY;
 
 type NotificationType =
