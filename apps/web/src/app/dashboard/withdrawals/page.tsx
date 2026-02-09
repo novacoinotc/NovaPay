@@ -34,10 +34,10 @@ const statusConfig: Record<
   string,
   { label: string; color: string; icon: React.ElementType }
 > = {
-  PENDING: { label: "Pendiente", color: "text-yellow-600 bg-yellow-50", icon: Clock },
-  PROCESSING: { label: "Procesando", color: "text-blue-600 bg-blue-50", icon: ArrowRight },
-  COMPLETED: { label: "Completado", color: "text-green-600 bg-green-50", icon: CheckCircle },
-  FAILED: { label: "Fallido", color: "text-red-600 bg-red-50", icon: XCircle },
+  PENDING: { label: "Pendiente", color: "text-yellow-400 bg-yellow-500/10", icon: Clock },
+  PROCESSING: { label: "Procesando", color: "text-blue-400 bg-blue-500/10", icon: ArrowRight },
+  COMPLETED: { label: "Completado", color: "text-green-400 bg-green-500/10", icon: CheckCircle },
+  FAILED: { label: "Fallido", color: "text-red-400 bg-red-500/10", icon: XCircle },
 };
 
 export default function WithdrawalsPage() {
@@ -142,7 +142,7 @@ export default function WithdrawalsPage() {
   if (loading && withdrawals.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
       </div>
     );
   }
@@ -151,10 +151,10 @@ export default function WithdrawalsPage() {
     <div>
       <div className="flex justify-between items-start mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Retiros SPEI</h1>
-          <p className="text-gray-600 mt-1">
+          <h1 className="text-2xl font-bold text-slate-100">Retiros SPEI</h1>
+          <p className="text-slate-400 mt-1">
             Saldo disponible:{" "}
-            <span className="font-semibold text-green-600">
+            <span className="font-semibold text-green-400">
               {formatMxn(stats?.balanceMxn || 0)} MXN
             </span>
           </p>
@@ -162,7 +162,7 @@ export default function WithdrawalsPage() {
         <button
           onClick={() => setShowModal(true)}
           disabled={!stats || stats.balanceMxn < BUSINESS_RULES.MIN_WITHDRAWAL_MXN + BUSINESS_RULES.WITHDRAWAL_FEE_MXN}
-          className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-glow"
         >
           <Plus className="h-4 w-4" />
           Solicitar retiro
@@ -170,11 +170,11 @@ export default function WithdrawalsPage() {
       </div>
 
       {/* Info card */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 flex items-start gap-3">
-        <AlertCircle className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
-        <div className="text-sm text-blue-700">
+      <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mb-6 flex items-start gap-3">
+        <AlertCircle className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" />
+        <div className="text-sm text-blue-300">
           <p className="font-medium">Información de retiros</p>
-          <ul className="mt-1 space-y-1 text-blue-600">
+          <ul className="mt-1 space-y-1 text-blue-400">
             <li>Monto mínimo: ${BUSINESS_RULES.MIN_WITHDRAWAL_MXN} MXN</li>
             <li>Monto máximo: ${BUSINESS_RULES.MAX_WITHDRAWAL_MXN.toLocaleString()} MXN</li>
             <li>Comisión por retiro: ${BUSINESS_RULES.WITHDRAWAL_FEE_MXN} MXN</li>
@@ -184,51 +184,51 @@ export default function WithdrawalsPage() {
       </div>
 
       {withdrawals.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-sm p-12 text-center">
-          <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-            <Clock className="h-8 w-8 text-gray-400" />
+        <div className="glass-card p-12 text-center">
+          <div className="h-16 w-16 rounded-full bg-white/[0.05] flex items-center justify-center mx-auto mb-4">
+            <Clock className="h-8 w-8 text-slate-500" />
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
+          <h3 className="text-lg font-medium text-slate-100 mb-2">
             Sin retiros aún
           </h3>
-          <p className="text-gray-600">
+          <p className="text-slate-400">
             Tus retiros SPEI aparecerán aquí
           </p>
         </div>
       ) : (
         <>
-          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+          <div className="glass-card overflow-hidden">
             <table className="w-full">
-              <thead className="bg-gray-50 border-b">
+              <thead className="bg-white/[0.05] border-b border-white/[0.08]">
                 <tr>
-                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">
                     Fecha
                   </th>
-                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">
                     Monto
                   </th>
-                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">
                     Comisión
                   </th>
-                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">
                     CLABE destino
                   </th>
-                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">
                     Referencia
                   </th>
-                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">
                     Estado
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-white/[0.05]">
                 {withdrawals.map((withdrawal) => {
                   const status = statusConfig[withdrawal.status] || statusConfig.PENDING;
                   const StatusIcon = status.icon;
 
                   return (
-                    <tr key={withdrawal.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    <tr key={withdrawal.id} className="hover:bg-white/[0.03]">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400">
                         {new Date(withdrawal.requestedAt).toLocaleDateString("es-MX", {
                           day: "2-digit",
                           month: "short",
@@ -238,17 +238,17 @@ export default function WithdrawalsPage() {
                         })}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-medium text-gray-900">
+                        <span className="text-sm font-medium text-slate-200">
                           {formatMxn(withdrawal.amountMxn)} MXN
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400">
                         {formatMxn(withdrawal.feeMxn)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-mono">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400 font-mono">
                         {maskClabe(withdrawal.clabe)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-mono">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400 font-mono">
                         {withdrawal.speiReference || "-"}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -259,7 +259,7 @@ export default function WithdrawalsPage() {
                           {status.label}
                         </span>
                         {withdrawal.failureReason && (
-                          <p className="text-xs text-red-500 mt-1">
+                          <p className="text-xs text-red-400 mt-1">
                             {withdrawal.failureReason}
                           </p>
                         )}
@@ -277,15 +277,15 @@ export default function WithdrawalsPage() {
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50"
+                className="px-4 py-2 text-sm text-slate-400 hover:text-slate-200 disabled:opacity-50"
               >
                 Anterior
               </button>
-              <span className="text-sm text-gray-600">Página {page}</span>
+              <span className="text-sm text-slate-400">Página {page}</span>
               <button
                 onClick={() => setPage((p) => p + 1)}
                 disabled={!hasMore}
-                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50"
+                className="px-4 py-2 text-sm text-slate-400 hover:text-slate-200 disabled:opacity-50"
               >
                 Siguiente
               </button>
@@ -297,30 +297,30 @@ export default function WithdrawalsPage() {
       {/* Modal de retiro */}
       {showModal && (
         <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50"
           onClick={() => setShowModal(false)}
         >
           <div
-            className="bg-white rounded-xl p-6 max-w-md w-full mx-4"
+            className="bg-[#0f0f17] border border-white/[0.1] rounded-xl p-6 max-w-md w-full mx-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            <h3 className="text-lg font-semibold text-slate-100 mb-4">
               Solicitar retiro SPEI
             </h3>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
-                <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm">
+                <div className="bg-red-500/10 text-red-400 p-3 rounded-lg text-sm border border-red-500/20">
                   {error}
                 </div>
               )}
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-slate-300 mb-1">
                   Monto a retirar (MXN)
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
                     $
                   </span>
                   <input
@@ -334,32 +334,32 @@ export default function WithdrawalsPage() {
                     )}
                     step="0.01"
                     required
-                    className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="w-full pl-8 pr-4 py-2 bg-white/[0.05] border border-white/[0.1] rounded-lg focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500/50 text-slate-100 placeholder-slate-500"
                     placeholder="0.00"
                   />
                 </div>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-slate-500 mt-1">
                   Saldo disponible: {formatMxn(stats?.balanceMxn || 0)} MXN
                 </p>
               </div>
 
-              <div className="bg-gray-50 rounded-lg p-4">
+              <div className="bg-white/[0.05] rounded-lg p-4 border border-white/[0.08]">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Monto solicitado:</span>
-                  <span className="font-medium">
+                  <span className="text-slate-400">Monto solicitado:</span>
+                  <span className="font-medium text-slate-200">
                     {amount ? formatMxn(parseFloat(amount)) : "$0.00"} MXN
                   </span>
                 </div>
                 <div className="flex justify-between text-sm mt-2">
-                  <span className="text-gray-600">Comisión:</span>
-                  <span className="text-gray-600">
+                  <span className="text-slate-400">Comisión:</span>
+                  <span className="text-slate-400">
                     {formatMxn(BUSINESS_RULES.WITHDRAWAL_FEE_MXN)} MXN
                   </span>
                 </div>
-                <hr className="my-2" />
+                <hr className="my-2 border-white/[0.08]" />
                 <div className="flex justify-between text-sm font-medium">
-                  <span>Total a descontar:</span>
-                  <span>
+                  <span className="text-slate-200">Total a descontar:</span>
+                  <span className="text-slate-100">
                     {amount
                       ? formatMxn(parseFloat(amount) + BUSINESS_RULES.WITHDRAWAL_FEE_MXN)
                       : formatMxn(BUSINESS_RULES.WITHDRAWAL_FEE_MXN)}{" "}
@@ -372,14 +372,14 @@ export default function WithdrawalsPage() {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="flex-1 py-2 bg-gray-100 rounded-lg hover:bg-gray-200"
+                  className="flex-1 py-2 bg-white/[0.05] border border-white/[0.1] rounded-lg hover:bg-white/[0.1] text-slate-300"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="flex-1 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="flex-1 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 flex items-center justify-center gap-2 shadow-glow"
                 >
                   {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
                   {submitting ? "Procesando..." : "Confirmar retiro"}

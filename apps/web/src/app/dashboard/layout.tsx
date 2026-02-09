@@ -31,28 +31,28 @@ export default function DashboardLayout({
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
+      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#0a0a0f]">
       {/* Sidebar */}
-      <div className="fixed inset-y-0 left-0 w-64 bg-white shadow-lg z-10">
-        <div className="flex h-16 items-center px-6 border-b">
-          <Link href="/dashboard" className="text-xl font-bold text-primary-600">
+      <div className="fixed inset-y-0 left-0 w-64 bg-[#050508] border-r border-white/[0.06] z-10">
+        <div className="flex h-16 items-center px-6 border-b border-white/[0.06]">
+          <Link href="/dashboard" className="text-xl font-bold gradient-text">
             NovaPay
           </Link>
         </div>
 
         {/* User info */}
-        <div className="px-4 py-4 border-b">
-          <p className="text-sm font-medium text-gray-900 truncate">
+        <div className="px-4 py-4 border-b border-white/[0.06]">
+          <p className="text-sm font-medium text-slate-100 truncate">
             {session?.user?.businessName}
           </p>
-          <p className="text-xs text-gray-500 truncate">
+          <p className="text-xs text-slate-500 truncate">
             {session?.user?.email}
           </p>
         </div>
@@ -69,8 +69,8 @@ export default function DashboardLayout({
                 href={item.href}
                 className={`flex items-center gap-3 px-3 py-2 rounded-lg mb-1 transition-colors ${
                   isActive
-                    ? "bg-primary-50 text-primary-600"
-                    : "text-gray-700 hover:bg-gray-100"
+                    ? "bg-primary-500/10 text-cyan-400 border border-primary-500/20 shadow-glow"
+                    : "text-slate-400 hover:bg-white/[0.05] hover:text-slate-200"
                 }`}
               >
                 <item.icon className="h-5 w-5" />
@@ -80,10 +80,10 @@ export default function DashboardLayout({
           })}
         </nav>
 
-        <div className="absolute bottom-0 left-0 right-0 p-3 border-t">
+        <div className="absolute bottom-0 left-0 right-0 p-3 border-t border-white/[0.06]">
           <button
             onClick={() => signOut({ callbackUrl: "/" })}
-            className="flex items-center gap-3 px-3 py-2 text-red-600 rounded-lg hover:bg-red-50 w-full"
+            className="flex items-center gap-3 px-3 py-2 text-red-400 rounded-lg hover:bg-red-500/10 w-full"
           >
             <LogOut className="h-5 w-5" />
             Cerrar sesión
@@ -93,8 +93,8 @@ export default function DashboardLayout({
 
       {/* Main content */}
       <div className="pl-64">
-        <header className="bg-white shadow-sm h-16 flex items-center px-8 sticky top-0 z-10">
-          <h1 className="text-lg font-medium text-gray-900">
+        <header className="bg-[#050508]/80 backdrop-blur-sm border-b border-white/[0.06] h-16 flex items-center px-8 sticky top-0 z-10">
+          <h1 className="text-lg font-medium text-slate-100">
             {navigation.find((n) => pathname.startsWith(n.href))?.name || "Dashboard"}
           </h1>
         </header>

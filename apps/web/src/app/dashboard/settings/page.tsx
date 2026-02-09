@@ -91,7 +91,7 @@ export default function SettingsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
       </div>
     );
   }
@@ -99,61 +99,61 @@ export default function SettingsPage() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Configuración</h1>
-        <p className="text-gray-600 mt-1">
+        <h1 className="text-2xl font-bold text-slate-100">Configuración</h1>
+        <p className="text-slate-400 mt-1">
           Ajusta los parámetros de tu cuenta
         </p>
       </div>
 
       <div className="max-w-2xl">
         {/* Info de cuenta (solo lectura) */}
-        <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+        <div className="glass-card p-6 mb-6">
+          <h2 className="text-lg font-semibold text-slate-100 mb-4">
             Información de la cuenta
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-500 mb-1">
+              <label className="block text-sm font-medium text-slate-500 mb-1">
                 Nombre del negocio
               </label>
-              <p className="text-gray-900">{merchant?.businessName}</p>
+              <p className="text-slate-200">{merchant?.businessName}</p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-500 mb-1">
+              <label className="block text-sm font-medium text-slate-500 mb-1">
                 RFC
               </label>
-              <p className="text-gray-900 font-mono">{merchant?.rfc}</p>
+              <p className="text-slate-200 font-mono">{merchant?.rfc}</p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-500 mb-1">
+              <label className="block text-sm font-medium text-slate-500 mb-1">
                 Email
               </label>
-              <p className="text-gray-900">{merchant?.email}</p>
+              <p className="text-slate-200">{merchant?.email}</p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-500 mb-1">
+              <label className="block text-sm font-medium text-slate-500 mb-1">
                 Spread / Comisión
               </label>
-              <p className="text-gray-900">{merchant?.spreadPercent}%</p>
+              <p className="text-slate-200">{merchant?.spreadPercent}%</p>
             </div>
           </div>
         </div>
 
         {/* Formulario editable */}
-        <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+        <form onSubmit={handleSubmit} className="glass-card p-6">
+          <h2 className="text-lg font-semibold text-slate-100 mb-4">
             Datos editables
           </h2>
 
           {error && (
-            <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-4 flex items-center gap-2">
+            <div className="bg-red-500/10 text-red-400 p-3 rounded-lg text-sm mb-4 flex items-center gap-2 border border-red-500/20">
               <AlertCircle className="h-4 w-4" />
               {error}
             </div>
           )}
 
           {success && (
-            <div className="bg-green-50 text-green-600 p-3 rounded-lg text-sm mb-4 flex items-center gap-2">
+            <div className="bg-green-500/10 text-green-400 p-3 rounded-lg text-sm mb-4 flex items-center gap-2 border border-green-500/20">
               <CheckCircle className="h-4 w-4" />
               Cambios guardados correctamente
             </div>
@@ -161,7 +161,7 @@ export default function SettingsPage() {
 
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-slate-300 mb-1">
                 Teléfono
               </label>
               <input
@@ -170,13 +170,13 @@ export default function SettingsPage() {
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, phone: e.target.value }))
                 }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full px-4 py-2 bg-white/[0.05] border border-white/[0.1] rounded-lg focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500/50 text-slate-100 placeholder-slate-500"
                 placeholder="5512345678"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-slate-300 mb-1">
                 CLABE Interbancaria
               </label>
               <input
@@ -186,21 +186,21 @@ export default function SettingsPage() {
                   setFormData((prev) => ({ ...prev, clabe: e.target.value }))
                 }
                 maxLength={18}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent font-mono"
+                className="w-full px-4 py-2 bg-white/[0.05] border border-white/[0.1] rounded-lg focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500/50 text-slate-100 placeholder-slate-500 font-mono"
                 placeholder="012345678901234567"
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-slate-500 mt-1">
                 Esta CLABE se usará para todos tus retiros SPEI
               </p>
             </div>
 
-            <div className="border-t pt-4 mt-4">
+            <div className="border-t border-white/[0.08] pt-4 mt-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <label className="text-sm font-medium text-gray-700">
+                  <label className="text-sm font-medium text-slate-300">
                     SPEI Automático
                   </label>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-slate-500 mt-1">
                     Envía automáticamente cada depósito acreditado a tu cuenta bancaria
                   </p>
                 </div>
@@ -213,7 +213,7 @@ export default function SettingsPage() {
                     }))
                   }
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    formData.autoSpeiEnabled ? "bg-primary-600" : "bg-gray-200"
+                    formData.autoSpeiEnabled ? "bg-primary-600 shadow-glow" : "bg-white/[0.1]"
                   }`}
                 >
                   <span
@@ -230,7 +230,7 @@ export default function SettingsPage() {
             <button
               type="submit"
               disabled={saving}
-              className="flex items-center gap-2 px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
+              className="flex items-center gap-2 px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 shadow-glow"
             >
               {saving ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -242,18 +242,18 @@ export default function SettingsPage() {
           </div>
         </form>
 
-        {/* API Keys section (placeholder) */}
-        <div className="bg-white rounded-xl shadow-sm p-6 mt-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+        {/* API Keys section */}
+        <div className="glass-card p-6 mt-6">
+          <h2 className="text-lg font-semibold text-slate-100 mb-4">
             API Keys
           </h2>
-          <p className="text-gray-600 text-sm">
+          <p className="text-slate-400 text-sm">
             Las API keys te permiten integrar NovaPay directamente en tu sistema.
             Esta funcionalidad estará disponible próximamente.
           </p>
           <button
             disabled
-            className="mt-4 px-4 py-2 bg-gray-100 text-gray-400 rounded-lg cursor-not-allowed"
+            className="mt-4 px-4 py-2 bg-white/[0.05] text-slate-500 rounded-lg cursor-not-allowed border border-white/[0.08]"
           >
             Generar API Key (Próximamente)
           </button>

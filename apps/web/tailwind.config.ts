@@ -8,6 +8,9 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        mono: ["JetBrains Mono", "monospace"],
+      },
       colors: {
         primary: {
           50: "#f0f9ff",
@@ -28,6 +31,10 @@ const config: Config = {
       },
       borderColor: {
         DEFAULT: "hsl(var(--border))",
+      },
+      boxShadow: {
+        glow: "0 0 15px rgba(14, 165, 233, 0.15)",
+        "glow-lg": "0 0 30px rgba(14, 165, 233, 0.2)",
       },
     },
   },
