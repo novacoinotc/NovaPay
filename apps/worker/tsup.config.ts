@@ -8,5 +8,7 @@ export default defineConfig({
   splitting: false,
   sourcemap: true,
   minify: false,
-  external: ["tronweb", "ethers", "drizzle-orm", "@novapay/db", "@novapay/crypto", "@novapay/shared", "@neondatabase/serverless"],
+  // Bundle everything except native modules
+  noExternal: [/@novapay\/.*/],
+  external: ["tronweb", "ethers", "@neondatabase/serverless", "bip39", "@scure/bip32"],
 });

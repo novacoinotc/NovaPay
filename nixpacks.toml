@@ -1,12 +1,12 @@
-# Nixpacks configuration for Railway
+# Nixpacks configuration for Railway Worker
 [phases.setup]
 nixPkgs = ["nodejs_20", "pnpm"]
 
 [phases.install]
-cmds = ["pnpm install"]
+cmds = ["pnpm install --frozen-lockfile"]
 
 [phases.build]
-cmds = ["pnpm turbo build --filter=@novapay/worker"]
+cmds = ["pnpm turbo build --filter=@novapay/worker..."]
 
 [start]
-cmd = "node apps/worker/dist/index.js"
+cmd = "cd apps/worker && node dist/index.js"
