@@ -14,6 +14,7 @@ import {
   Loader2,
   Menu,
   X,
+  Shield,
 } from "lucide-react";
 
 const navigation = [
@@ -131,6 +132,16 @@ export default function DashboardLayout({
         </nav>
 
         <div className="absolute bottom-0 left-0 right-0 p-3 border-t border-white/[0.06]">
+          {session?.user?.role === "ADMIN" && (
+            <Link
+              href="/admin"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-3 px-3 py-2.5 text-amber-400 rounded-xl hover:bg-amber-500/10 w-full transition-all duration-200 mb-1"
+            >
+              <Shield className="h-5 w-5" />
+              <span className="text-sm font-medium">Panel Admin</span>
+            </Link>
+          )}
           <button
             onClick={() => signOut({ callbackUrl: "/" })}
             className="flex items-center gap-3 px-3 py-2.5 text-red-400 rounded-xl hover:bg-red-500/10 w-full transition-all duration-200"

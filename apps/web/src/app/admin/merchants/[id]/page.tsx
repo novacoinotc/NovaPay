@@ -13,6 +13,7 @@ import {
   CheckCircle,
   Copy,
   Check,
+  DollarSign,
 } from "lucide-react";
 
 interface MerchantDetail {
@@ -82,6 +83,11 @@ export default function MerchantDetailPage() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
+  const [showBalanceModal, setShowBalanceModal] = useState(false);
+  const [balanceAmount, setBalanceAmount] = useState("");
+  const [balanceReason, setBalanceReason] = useState("");
+  const [balanceLoading, setBalanceLoading] = useState(false);
+  const [balanceResult, setBalanceResult] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
   useEffect(() => {
     fetchMerchant();
@@ -128,6 +134,36 @@ export default function MerchantDetailPage() {
     navigator.clipboard.writeText(text);
     setCopied(text);
     setTimeout(() => setCopied(null), 2000);
+  };
+
+  const adjustBalance = async () => {
+    const amount = parseFloat(balanceAmount);
+    if (isNaN(amount) || amount === 0) return;
+    if (!balanceReason.trim()) return;
+
+    setBalanceLoading(true);
+    setBalanceResult(null);
+    try {
+      const response = await fetch(`/api/admin/merchants/${params.id}/balance`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount, reason: balanceReason }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setBalanceResult({ message: `Balance ajustado: $${data.data.previousBalance} → $${data.data.newBalance}`, type: "success" });
+        setMerchant((prev) => prev ? { ...prev, balanceMxn: data.data.newBalance } : null);
+        setBalanceAmount("");
+        setBalanceReason("");
+        setTimeout(() => setShowBalanceModal(false), 1500);
+      } else {
+        setBalanceResult({ message: data.error?.message || "Error", type: "error" });
+      }
+    } catch (error) {
+      setBalanceResult({ message: "Error de conexión", type: "error" });
+    } finally {
+      setBalanceLoading(false);
+    }
   };
 
   if (loading) {
@@ -205,6 +241,12 @@ export default function MerchantDetailPage() {
           <p className="text-xl font-bold text-zinc-100">
             ${parseFloat(merchant.balanceMxn).toLocaleString("es-MX", { minimumFractionDigits: 2 })} MXN
           </p>
+          <button
+            onClick={() => { setShowBalanceModal(true); setBalanceResult(null); }}
+            className="mt-2 flex items-center gap-1 text-xs text-primary-400 hover:text-primary-300 transition-colors"
+          >
+            <DollarSign className="h-3.5 w-3.5" /> Ajustar balance
+          </button>
         </div>
         <div className="glass-card p-4 sm:p-6">
           <p className="text-sm text-zinc-400 mb-1">RFC</p>
@@ -387,6 +429,70 @@ export default function MerchantDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Balance Adjustment Modal */}
+      {showBalanceModal && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in"
+          onClick={() => setShowBalanceModal(false)}
+        >
+          <div
+            className="glass-card max-w-md w-full mx-4 p-6 animate-fade-in-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-semibold text-zinc-100 mb-1">Ajustar Balance</h3>
+            <p className="text-sm text-zinc-400 mb-4">
+              Balance actual: ${parseFloat(merchant.balanceMxn).toLocaleString("es-MX", { minimumFractionDigits: 2 })} MXN
+            </p>
+
+            {balanceResult && (
+              <div className={`p-3 rounded-xl mb-4 text-sm ${balanceResult.type === "success" ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"}`}>
+                {balanceResult.message}
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm text-zinc-400 mb-1 block">Monto (positivo = agregar, negativo = restar)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={balanceAmount}
+                  onChange={(e) => setBalanceAmount(e.target.value)}
+                  placeholder="Ej: 100.00 o -50.00"
+                  className="w-full px-4 py-2 bg-white/[0.05] border border-white/[0.08] rounded-xl text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-primary-500/50"
+                />
+              </div>
+              <div>
+                <label className="text-sm text-zinc-400 mb-1 block">Motivo del ajuste</label>
+                <input
+                  type="text"
+                  value={balanceReason}
+                  onChange={(e) => setBalanceReason(e.target.value)}
+                  placeholder="Ej: Corrección manual, reembolso, etc."
+                  className="w-full px-4 py-2 bg-white/[0.05] border border-white/[0.08] rounded-xl text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-primary-500/50"
+                />
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={adjustBalance}
+                  disabled={balanceLoading || !balanceAmount || !balanceReason.trim()}
+                  className="btn-primary flex-1 !py-2.5 text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {balanceLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <DollarSign className="h-4 w-4" />}
+                  Aplicar ajuste
+                </button>
+                <button
+                  onClick={() => setShowBalanceModal(false)}
+                  className="btn-secondary flex-1 !py-2.5 text-sm"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

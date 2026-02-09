@@ -7,6 +7,7 @@ import { signOut, useSession } from "next-auth/react";
 import {
   LayoutDashboard,
   Users,
+  ArrowUpFromLine,
   LogOut,
   Loader2,
   Menu,
@@ -18,6 +19,7 @@ import {
 const adminNavigation = [
   { name: "Overview", href: "/admin", icon: LayoutDashboard },
   { name: "Merchants", href: "/admin/merchants", icon: Users },
+  { name: "Retiros", href: "/admin/withdrawals", icon: ArrowUpFromLine },
 ];
 
 export default function AdminLayout({
