@@ -71,10 +71,10 @@ export default function RegisterPage() {
     <div className="min-h-screen bg-[#070b14] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
       {/* Background effects */}
       <div className="fixed inset-0 bg-grid pointer-events-none" />
-      <div className="orb orb-navy w-[500px] h-[500px] -top-32 -left-32 animate-float-slow" />
-      <div className="orb orb-blue w-[300px] h-[300px] -bottom-16 -right-16 animate-float" />
+      <div className="orb orb-navy w-[250px] h-[250px] sm:w-[500px] sm:h-[500px] -top-32 -left-32 animate-float-slow" />
+      <div className="orb orb-blue hidden sm:block w-[300px] h-[300px] -bottom-16 -right-16 animate-float" />
 
-      <div className="max-w-lg w-full relative z-10 animate-fade-in-up">
+      <div className="max-w-[90vw] sm:max-w-lg w-full relative z-10 animate-fade-in-up">
         <div className="text-center mb-8">
           <Link href="/" className="text-3xl font-bold gradient-text">
             NovaPay
@@ -88,7 +88,7 @@ export default function RegisterPage() {
         </div>
 
         <div className="gradient-border-card">
-          <div className="p-8">
+          <div className="p-5 sm:p-8">
             <form onSubmit={handleSubmit} className="space-y-5">
               {error && (
                 <div className="bg-red-500/10 text-red-400 p-3 rounded-xl text-sm border border-red-500/20">
@@ -214,7 +214,7 @@ export default function RegisterPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full btn-primary flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                  className="w-full btn-primary flex items-center justify-center gap-2 min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
                 >
                   {loading && <Loader2 className="h-4 w-4 animate-spin" />}
                   {loading ? "Registrando..." : "Crear cuenta"}

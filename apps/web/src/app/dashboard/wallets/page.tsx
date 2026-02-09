@@ -112,9 +112,9 @@ export default function WalletsPage() {
 
   return (
     <div className="animate-fade-in-up">
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-100">Mis Wallets</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-zinc-100">Mis Wallets</h1>
           <p className="text-zinc-400 mt-1">
             Direcciones para recibir pagos en crypto
           </p>
@@ -136,9 +136,9 @@ export default function WalletsPage() {
       </div>
 
       {wallets.length === 0 ? (
-        <div className="glass-card p-12 text-center">
-          <div className="h-16 w-16 rounded-2xl bg-white/[0.05] flex items-center justify-center mx-auto mb-4">
-            <QrCode className="h-8 w-8 text-zinc-500" />
+        <div className="glass-card p-8 sm:p-12 text-center">
+          <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-2xl bg-white/[0.05] flex items-center justify-center mx-auto mb-4">
+            <QrCode className="h-6 w-6 sm:h-8 sm:w-8 text-zinc-500" />
           </div>
           <h3 className="text-lg font-medium text-zinc-100 mb-2">
             No tienes wallets aún
@@ -160,9 +160,9 @@ export default function WalletsPage() {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
           {wallets.map((wallet) => (
-            <div key={wallet.id} className="glass-card p-6">
+            <div key={wallet.id} className="glass-card p-4 sm:p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div
                   className={`h-10 w-10 rounded-xl ${
@@ -179,10 +179,10 @@ export default function WalletsPage() {
                 </div>
               </div>
 
-              <div className="bg-white/[0.03] rounded-xl p-4 mb-4 border border-white/[0.06]">
+              <div className="bg-white/[0.03] rounded-xl p-3 sm:p-4 mb-4 border border-white/[0.06]">
                 <p className="text-xs text-zinc-500 mb-1">Dirección de depósito</p>
                 <div className="flex items-center gap-2">
-                  <code className="text-sm text-zinc-200 break-all flex-1 font-mono">
+                  <code className="text-xs sm:text-sm text-zinc-200 break-all flex-1 font-mono">
                     {wallet.address}
                   </code>
                   <button
@@ -220,9 +220,9 @@ export default function WalletsPage() {
                   href={`${assetInfo[wallet.asset]?.explorer || ""}${wallet.address}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-sm text-primary-400 hover:text-primary-300 transition-colors"
+                  className="flex items-center gap-1 text-xs sm:text-sm text-primary-400 hover:text-primary-300 transition-colors"
                 >
-                  Ver en explorer <ExternalLink className="h-4 w-4" />
+                  Ver en explorer <ExternalLink className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </a>
               </div>
             </div>
@@ -240,8 +240,8 @@ export default function WalletsPage() {
             className="gradient-border-card max-w-sm w-full mx-4 animate-fade-in-up"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-6">
-              <h3 className="text-lg font-semibold text-zinc-100 mb-2 text-center">
+            <div className="p-4 sm:p-6">
+              <h3 className="text-base sm:text-lg font-semibold text-zinc-100 mb-2 text-center">
                 {assetInfo[qrModal.asset]?.name || qrModal.asset}
               </h3>
               <p className="text-sm text-zinc-500 mb-4 text-center">
@@ -249,18 +249,18 @@ export default function WalletsPage() {
               </p>
               <div className="bg-[#09090b] rounded-xl p-4 flex items-center justify-center border border-white/[0.06]">
                 {qrDataUrl ? (
-                  <img src={qrDataUrl} alt="QR Code" className="w-48 h-48" />
+                  <img src={qrDataUrl} alt="QR Code" className="w-40 h-40 sm:w-48 sm:h-48" />
                 ) : (
                   <Loader2 className="h-8 w-8 animate-spin text-zinc-500" />
                 )}
               </div>
-              <p className="text-center text-xs text-zinc-500 mt-4 font-mono break-all">
+              <p className="text-center text-[10px] sm:text-xs text-zinc-500 mt-4 font-mono break-all">
                 {qrModal.address}
               </p>
               <div className="flex gap-3 mt-4">
                 <button
                   onClick={() => copyAddress(qrModal.address)}
-                  className="btn-primary flex-1 !py-2.5 flex items-center justify-center gap-2"
+                  className="btn-primary flex-1 !py-3 sm:!py-2.5 flex items-center justify-center gap-2 text-sm"
                 >
                   {copied === qrModal.address ? (
                     <>
@@ -274,7 +274,7 @@ export default function WalletsPage() {
                 </button>
                 <button
                   onClick={() => setQrModal(null)}
-                  className="btn-secondary flex-1 !py-2.5"
+                  className="btn-secondary flex-1 !py-3 sm:!py-2.5 text-sm"
                 >
                   Cerrar
                 </button>

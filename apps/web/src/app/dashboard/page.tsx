@@ -54,7 +54,7 @@ export default function DashboardPage() {
   return (
     <div className="animate-fade-in-up">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-zinc-100">
+        <h1 className="text-xl sm:text-2xl font-bold text-zinc-100">
           Bienvenido, {session?.user?.businessName}
         </h1>
         <p className="text-zinc-400 mt-1">
@@ -63,7 +63,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
         <div className="gradient-border-card">
           <div className="p-6">
             <div className="flex items-center gap-4">
@@ -145,7 +145,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Quick actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         <Link href="/dashboard/wallets" className="glass-card p-6 group">
           <div className="flex items-center justify-between mb-2">
             <h3 className="font-semibold text-zinc-100">Ver mis wallets</h3>

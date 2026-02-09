@@ -82,7 +82,7 @@ export default function DepositsPage() {
   return (
     <div className="animate-fade-in-up">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-zinc-100">Historial de Depósitos</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-zinc-100">Historial de Depósitos</h1>
         <p className="text-zinc-400 mt-1">
           {total} depósito{total !== 1 ? "s" : ""} en total
         </p>
@@ -103,6 +103,7 @@ export default function DepositsPage() {
       ) : (
         <>
           <div className="glass-card overflow-hidden">
+            <div className="overflow-x-auto">
             <table className="w-full table-dark">
               <thead>
                 <tr>
@@ -168,6 +169,7 @@ export default function DepositsPage() {
                 })}
               </tbody>
             </table>
+            </div>
           </div>
 
           {/* Pagination */}
@@ -176,7 +178,7 @@ export default function DepositsPage() {
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-4 py-2.5 min-h-[44px] text-sm text-zinc-400 hover:text-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Anterior
               </button>
@@ -184,7 +186,7 @@ export default function DepositsPage() {
               <button
                 onClick={() => setPage((p) => p + 1)}
                 disabled={!hasMore}
-                className="px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-4 py-2.5 min-h-[44px] text-sm text-zinc-400 hover:text-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Siguiente
               </button>

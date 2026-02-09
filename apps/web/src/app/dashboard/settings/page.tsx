@@ -99,7 +99,7 @@ export default function SettingsPage() {
   return (
     <div className="animate-fade-in-up">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-zinc-100">Configuración</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-zinc-100">Configuración</h1>
         <p className="text-zinc-400 mt-1">
           Ajusta los parámetros de tu cuenta
         </p>
@@ -107,8 +107,8 @@ export default function SettingsPage() {
 
       <div className="max-w-2xl">
         {/* Info de cuenta (solo lectura) */}
-        <div className="glass-card p-6 mb-6">
-          <h2 className="text-lg font-semibold text-zinc-100 mb-4">
+        <div className="glass-card p-4 sm:p-6 mb-6">
+          <h2 className="text-base sm:text-lg font-semibold text-zinc-100 mb-4">
             Información de la cuenta
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -140,8 +140,8 @@ export default function SettingsPage() {
         </div>
 
         {/* Formulario editable */}
-        <form onSubmit={handleSubmit} className="glass-card p-6">
-          <h2 className="text-lg font-semibold text-zinc-100 mb-4">
+        <form onSubmit={handleSubmit} className="glass-card p-4 sm:p-6">
+          <h2 className="text-base sm:text-lg font-semibold text-zinc-100 mb-4">
             Datos editables
           </h2>
 
@@ -195,8 +195,8 @@ export default function SettingsPage() {
             </div>
 
             <div className="border-t border-white/[0.06] pt-4 mt-4">
-              <div className="flex items-center justify-between">
-                <div>
+              <div className="flex items-start sm:items-center justify-between gap-4">
+                <div className="flex-1 min-w-0">
                   <label className="text-sm font-medium text-zinc-300">
                     SPEI Automático
                   </label>
@@ -212,7 +212,7 @@ export default function SettingsPage() {
                       autoSpeiEnabled: !prev.autoSpeiEnabled,
                     }))
                   }
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-all duration-200 ${
+                  className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-all duration-200 ${
                     formData.autoSpeiEnabled
                       ? "bg-gradient-to-r from-primary-600 to-primary-500 shadow-glow"
                       : "bg-white/[0.1]"
@@ -245,17 +245,17 @@ export default function SettingsPage() {
         </form>
 
         {/* API Keys section */}
-        <div className="glass-card p-6 mt-6">
-          <h2 className="text-lg font-semibold text-zinc-100 mb-4">
+        <div className="glass-card p-4 sm:p-6 mt-6">
+          <h2 className="text-base sm:text-lg font-semibold text-zinc-100 mb-4">
             API Keys
           </h2>
-          <p className="text-zinc-400 text-sm">
+          <p className="text-zinc-400 text-sm break-words">
             Las API keys te permiten integrar NovaPay directamente en tu sistema.
             Esta funcionalidad estará disponible próximamente.
           </p>
           <button
             disabled
-            className="mt-4 px-4 py-2.5 bg-white/[0.03] text-zinc-500 rounded-xl cursor-not-allowed border border-white/[0.06]"
+            className="mt-4 px-4 py-2.5 bg-white/[0.03] text-zinc-500 rounded-xl cursor-not-allowed border border-white/[0.06] text-sm sm:text-base w-full sm:w-auto"
           >
             Generar API Key (Próximamente)
           </button>

@@ -149,9 +149,9 @@ export default function WithdrawalsPage() {
 
   return (
     <div className="animate-fade-in-up">
-      <div className="flex justify-between items-start mb-8">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-100">Retiros SPEI</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-zinc-100">Retiros SPEI</h1>
           <p className="text-zinc-400 mt-1">
             Saldo disponible:{" "}
             <span className="font-semibold text-emerald-400">
@@ -198,6 +198,7 @@ export default function WithdrawalsPage() {
       ) : (
         <>
           <div className="glass-card overflow-hidden">
+            <div className="overflow-x-auto">
             <table className="w-full table-dark">
               <thead>
                 <tr>
@@ -253,6 +254,7 @@ export default function WithdrawalsPage() {
                 })}
               </tbody>
             </table>
+            </div>
           </div>
 
           {/* Pagination */}
@@ -261,7 +263,7 @@ export default function WithdrawalsPage() {
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200 disabled:opacity-50 transition-colors"
+                className="px-4 py-2.5 min-h-[44px] text-sm text-zinc-400 hover:text-zinc-200 disabled:opacity-50 transition-colors"
               >
                 Anterior
               </button>
@@ -269,7 +271,7 @@ export default function WithdrawalsPage() {
               <button
                 onClick={() => setPage((p) => p + 1)}
                 disabled={!hasMore}
-                className="px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200 disabled:opacity-50 transition-colors"
+                className="px-4 py-2.5 min-h-[44px] text-sm text-zinc-400 hover:text-zinc-200 disabled:opacity-50 transition-colors"
               >
                 Siguiente
               </button>
@@ -281,7 +283,7 @@ export default function WithdrawalsPage() {
       {/* Modal de retiro */}
       {showModal && (
         <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in p-4"
           onClick={() => setShowModal(false)}
         >
           <div
@@ -353,18 +355,18 @@ export default function WithdrawalsPage() {
                   </div>
                 </div>
 
-                <div className="flex gap-3">
+                <div className="flex flex-col-reverse sm:flex-row gap-3">
                   <button
                     type="button"
                     onClick={() => setShowModal(false)}
-                    className="btn-secondary flex-1 !py-2.5"
+                    className="btn-secondary flex-1 !py-2.5 min-h-[44px]"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="btn-primary flex-1 !py-2.5 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                    className="btn-primary flex-1 !py-2.5 min-h-[44px] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
                   >
                     {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
                     {submitting ? "Procesando..." : "Confirmar retiro"}

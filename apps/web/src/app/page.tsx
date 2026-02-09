@@ -6,9 +6,9 @@ export default function HomePage() {
     <div className="min-h-screen bg-[#070b14] relative overflow-hidden">
       {/* Background effects */}
       <div className="fixed inset-0 bg-grid pointer-events-none" />
-      <div className="orb orb-navy w-[600px] h-[600px] -top-48 -left-48 animate-float-slow" />
-      <div className="orb orb-blue w-[400px] h-[400px] top-1/3 -right-32 animate-float" />
-      <div className="orb orb-ice w-[300px] h-[300px] bottom-0 left-1/4 animate-float-slower" />
+      <div className="orb orb-navy w-[300px] h-[300px] sm:w-[600px] sm:h-[600px] -top-48 -left-48 animate-float-slow" />
+      <div className="orb orb-blue w-[200px] h-[200px] sm:w-[400px] sm:h-[400px] top-1/3 -right-32 animate-float" />
+      <div className="orb orb-ice hidden sm:block w-[300px] h-[300px] bottom-0 left-1/4 animate-float-slower" />
 
       {/* Header */}
       <header className="relative z-20 border-b border-white/[0.06]">
@@ -22,7 +22,7 @@ export default function HomePage() {
             <div className="flex items-center gap-4">
               <Link
                 href="/login"
-                className="text-zinc-400 hover:text-zinc-100 transition-colors"
+                className="text-sm text-zinc-400 hover:text-zinc-100 transition-colors"
               >
                 Iniciar sesión
               </Link>
@@ -39,14 +39,14 @@ export default function HomePage() {
 
       {/* Hero */}
       <main className="relative z-10">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-32 sm:py-40">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 sm:py-32 lg:py-40">
           <div className="text-center animate-fade-in-up">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/[0.05] border border-white/[0.08] text-sm text-zinc-400 mb-8">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/[0.05] border border-white/[0.08] text-xs sm:text-sm text-zinc-400 mb-8">
               <span className="w-2 h-2 rounded-full bg-primary-400 animate-pulse-glow" />
               Gateway de pagos crypto para México
             </div>
 
-            <h1 className="text-5xl sm:text-7xl font-bold tracking-tight leading-tight">
+            <h1 className="text-3xl sm:text-5xl lg:text-7xl font-bold tracking-tight leading-tight">
               <span className="text-zinc-100">Acepta </span>
               <span className="gradient-text-hero">cripto</span>
               <span className="text-zinc-100">,</span>
@@ -54,21 +54,21 @@ export default function HomePage() {
               <span className="text-zinc-100">recibe </span>
               <span className="gradient-text-hero">pesos</span>
             </h1>
-            <p className="mt-8 text-lg sm:text-xl leading-relaxed text-zinc-400 max-w-2xl mx-auto">
+            <p className="mt-6 sm:mt-8 text-base sm:text-lg lg:text-xl leading-relaxed text-zinc-400 max-w-xl sm:max-w-2xl mx-auto">
               La forma más fácil de aceptar pagos en criptomonedas para tu
               negocio en México. Recibe USDT, ETH o BTC y obtén pesos mexicanos
               automáticamente en tu cuenta.
             </p>
-            <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
+            <div className="mt-8 sm:mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
                 href="/register"
-                className="btn-primary flex items-center gap-2 text-lg"
+                className="btn-primary flex items-center justify-center gap-2 text-lg w-full sm:w-auto min-h-[44px]"
               >
                 Comenzar ahora <ArrowRight className="h-5 w-5" />
               </Link>
               <Link
                 href="/login"
-                className="btn-secondary flex items-center gap-2"
+                className="btn-secondary flex items-center justify-center gap-2 w-full sm:w-auto min-h-[44px]"
               >
                 Ya tengo cuenta <ChevronRight className="h-4 w-4" />
               </Link>
@@ -88,7 +88,7 @@ export default function HomePage() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 gap-8 sm:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:gap-8 sm:grid-cols-3 px-4 sm:px-0">
               <div className="gradient-border-card">
                 <div className="p-8 text-center">
                   <div className="mx-auto h-14 w-14 rounded-2xl bg-primary-500/10 border border-primary-500/20 flex items-center justify-center mb-6">
@@ -139,7 +139,7 @@ export default function HomePage() {
 
         {/* CTA */}
         <div className="relative py-24 border-t border-white/[0.06]">
-          <div className="orb orb-navy w-[500px] h-[500px] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+          <div className="orb orb-navy w-[250px] h-[250px] sm:w-[500px] sm:h-[500px] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center relative z-10">
             <h2 className="text-3xl sm:text-4xl font-bold text-zinc-100">
               ¿Listo para aceptar pagos en crypto?
