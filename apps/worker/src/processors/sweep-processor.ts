@@ -1,5 +1,5 @@
 import { getDb, deposits, wallets, hotWalletTransactions } from "@novapay/db";
-import { eq } from "@novapay/db";
+import { eq, and, sql } from "@novapay/db";
 import { ASSET_CONFIG } from "@novapay/shared";
 import {
   tron,
@@ -47,88 +47,73 @@ export class SweepProcessor {
   }
 
   /**
-   * Procesa todos los depósitos confirmados que necesitan sweep
+   * Procesa sweeps por wallet - barre cuando el balance acumulado supera el mínimo
+   * En lugar de barrer cada depósito individual, revisa el balance real de la wallet
    */
   async processPendingSweeps(): Promise<void> {
     const db = getDb();
 
-    // Obtener depósitos confirmados pendientes de sweep
-    const confirmedDeposits = await db
+    // Obtener wallets activas que tienen depósitos CREDITED (ya acreditados, pendientes de sweep)
+    const activeWallets = await db
       .select()
-      .from(deposits)
-      .where(eq(deposits.status, "CONFIRMED"));
+      .from(wallets)
+      .where(eq(wallets.isActive, true));
 
-    if (confirmedDeposits.length === 0) return;
-
-    console.log(`Processing ${confirmedDeposits.length} pending sweeps...`);
-
-    for (const deposit of confirmedDeposits) {
+    for (const wallet of activeWallets) {
       try {
-        await this.sweepDeposit(deposit);
+        await this.checkAndSweepWallet(wallet);
       } catch (error) {
-        console.error(`Error sweeping deposit ${deposit.id}:`, error);
+        console.error(`Error processing sweep for wallet ${wallet.address}:`, error);
       }
     }
   }
 
   /**
-   * Realiza el sweep de un depósito específico usando HD Wallet
+   * Verifica el balance real de una wallet y hace sweep si supera el mínimo
    */
-  private async sweepDeposit(
-    deposit: typeof deposits.$inferSelect
+  private async checkAndSweepWallet(
+    wallet: typeof wallets.$inferSelect
   ): Promise<void> {
-    const db = getDb();
+    if (wallet.walletIndex === null || wallet.walletIndex === undefined) return;
 
-    // Obtener la wallet asociada
-    const [wallet] = await db
-      .select()
-      .from(wallets)
-      .where(eq(wallets.id, deposit.walletId));
+    const hotWalletAddress = this.getHotWalletAddress(wallet.network);
+    if (!hotWalletAddress) return;
 
-    if (!wallet) {
-      console.error(`Wallet not found for deposit ${deposit.id}`);
+    // Obtener balance real de la wallet on-chain
+    let balance = "0";
+    if (wallet.network === "TRON" && this.tronClient) {
+      balance = await tron.getUsdtBalance(this.tronClient, wallet.address);
+    } else if (wallet.network === "ETHEREUM" && this.ethProvider) {
+      balance = await ethereum.getUsdtBalance(this.ethProvider, wallet.address);
+    } else {
       return;
     }
 
-    // Verificar que tenemos el índice de la wallet
-    if (wallet.walletIndex === null || wallet.walletIndex === undefined) {
-      console.error(`Wallet ${wallet.id} does not have walletIndex (legacy wallet?)`);
-      return;
-    }
+    const balanceNum = parseFloat(balance);
+    if (balanceNum <= 0) return;
 
-    // Verificar monto mínimo para sweep
-    const assetConfig = ASSET_CONFIG[deposit.asset as keyof typeof ASSET_CONFIG];
+    // Verificar si el balance supera el mínimo de sweep
+    const assetConfig = ASSET_CONFIG[wallet.asset as keyof typeof ASSET_CONFIG];
     const minSweep = parseFloat(assetConfig.minSweep);
-    const amount = parseFloat(deposit.amountCrypto);
 
-    if (amount < minSweep) {
-      console.log(
-        `Deposit ${deposit.id} below minimum sweep (${amount} < ${minSweep})`
-      );
+    if (balanceNum < minSweep) {
+      // No loguear cada 15 segundos, solo cuando hay balance significativo
+      if (balanceNum >= 1) {
+        console.log(`Wallet ${wallet.address}: ${balance} USDT (accumulating, min sweep: ${minSweep})`);
+      }
       return;
     }
 
-    // Marcar como en proceso de sweep
-    await db
-      .update(deposits)
-      .set({ status: "SWEEPING" })
-      .where(eq(deposits.id, deposit.id));
-
-    // Hot wallet destino
-    const hotWalletAddress = this.getHotWalletAddress(deposit.network);
-    if (!hotWalletAddress) {
-      throw new Error(`Hot wallet not configured for ${deposit.network}`);
-    }
+    console.log(`Wallet ${wallet.address}: ${balance} USDT >= ${minSweep} minimum, sweeping...`);
 
     let result: { success: boolean; txHash?: string; error?: string };
 
-    // Ejecutar sweep según la red usando HD Wallet + Energy Delegation
-    switch (deposit.network) {
+    switch (wallet.network) {
       case "TRON":
         result = await this.sweepTronWithHDWallet(
           wallet.walletIndex,
           hotWalletAddress,
-          deposit.amountCrypto
+          balance // Barrer el balance completo
         );
         break;
 
@@ -136,18 +121,29 @@ export class SweepProcessor {
         result = await this.sweepEthWithHDWallet(
           wallet.walletIndex,
           hotWalletAddress,
-          deposit.amountCrypto
+          balance
         );
         break;
 
       default:
-        throw new Error(`Network ${deposit.network} not supported for sweep`);
+        return;
     }
 
     if (result.success && result.txHash) {
-      console.log(`Sweep successful: ${result.txHash}`);
+      console.log(`Sweep successful: ${result.txHash} (${balance} USDT)`);
 
-      // Actualizar depósito
+      const db = getDb();
+
+      // Registrar transacción de hot wallet
+      await db.insert(hotWalletTransactions).values({
+        network: wallet.network,
+        asset: wallet.asset,
+        txHash: result.txHash,
+        direction: "IN",
+        amount: balance,
+      });
+
+      // Marcar todos los depósitos CREDITED de esta wallet como SWEPT
       await db
         .update(deposits)
         .set({
@@ -155,38 +151,26 @@ export class SweepProcessor {
           sweepTxHash: result.txHash,
           sweptAt: new Date(),
         })
-        .where(eq(deposits.id, deposit.id));
-
-      // Registrar transacción de hot wallet
-      await db.insert(hotWalletTransactions).values({
-        depositId: deposit.id,
-        network: deposit.network,
-        asset: deposit.asset,
-        txHash: result.txHash,
-        direction: "IN",
-        amount: deposit.amountCrypto,
-      });
+        .where(
+          and(
+            eq(deposits.walletId, wallet.id),
+            eq(deposits.status, "CREDITED")
+          )
+        );
 
       // Notificar a la API
       await notifyApi("deposit-swept", {
-        depositId: deposit.id,
+        walletId: wallet.id,
         sweepTxHash: result.txHash,
-        amountSwept: deposit.amountCrypto,
+        amountSwept: balance,
       });
     } else {
-      console.error(`Sweep failed for deposit ${deposit.id}: ${result.error}`);
-
-      // Revertir a CONFIRMED para reintentar
-      await db
-        .update(deposits)
-        .set({ status: "CONFIRMED" })
-        .where(eq(deposits.id, deposit.id));
+      console.error(`Sweep failed for wallet ${wallet.address}: ${result.error}`);
     }
   }
 
   /**
    * Sweep en Tron usando HD Wallet + Energy Delegation
-   * La private key solo existe en memoria durante el sweep
    */
   private async sweepTronWithHDWallet(
     walletIndex: number,
@@ -206,11 +190,9 @@ export class SweepProcessor {
     }
 
     try {
-      // Derivar private key en memoria (nunca se guarda)
       const derivedWallet = deriveTronWalletWithKey(MASTER_MNEMONIC, walletIndex);
       console.log(`Derived wallet ${walletIndex}: ${derivedWallet.address}`);
 
-      // Usar energy delegation del master wallet
       const result = await tron.sweepWithMasterEnergy(
         this.tronClient,
         MASTER_PRIVATE_KEY,
@@ -219,7 +201,6 @@ export class SweepProcessor {
         amount
       );
 
-      // La key se garbage collecta al salir del scope
       return result;
     } catch (error: any) {
       return {
@@ -246,11 +227,9 @@ export class SweepProcessor {
     }
 
     try {
-      // Derivar private key en memoria
       const derivedWallet = deriveEthWalletWithKey(MASTER_MNEMONIC, walletIndex);
       console.log(`Derived wallet ${walletIndex}: ${derivedWallet.address}`);
 
-      // Ejecutar sweep
       const result = await ethereum.sweepUsdt(
         this.ethProvider,
         derivedWallet.privateKey,

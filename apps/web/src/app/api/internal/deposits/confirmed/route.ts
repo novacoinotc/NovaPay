@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { getDb, deposits } from "@novapay/db";
-import { eq } from "@novapay/db";
+import { getDb, deposits, merchants } from "@novapay/db";
+import { eq, sql } from "@novapay/db";
+import { getQuote } from "@novapay/crypto";
+import { calculateMxnAmount, CryptoAsset } from "@novapay/shared";
 
 // Schema de validación para depósito confirmado
 const depositConfirmedSchema = z.object({
@@ -40,35 +42,72 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Si ya está confirmado o más avanzado, no hacer nada
-    if (deposit.status !== "PENDING") {
+    // Si ya fue acreditado, no hacer nada
+    if (deposit.status === "CREDITED" || deposit.amountMxn) {
       return NextResponse.json({
         success: true,
         data: {
-          message: `Deposit already ${deposit.status}`,
+          message: `Deposit already credited`,
           status: deposit.status,
         },
       });
     }
 
-    // Actualizar estado a CONFIRMED
+    // Obtener comercio para spread
+    const [merchant] = await db
+      .select()
+      .from(merchants)
+      .where(eq(merchants.id, deposit.merchantId))
+      .limit(1);
+
+    if (!merchant) {
+      return NextResponse.json(
+        { success: false, error: { code: "MERCHANT_NOT_FOUND", message: "Merchant not found" } },
+        { status: 404 }
+      );
+    }
+
+    // Obtener precio actual y calcular MXN
+    const quote = await getQuote(deposit.asset as CryptoAsset);
+    const spreadPercent = parseFloat(merchant.spreadPercent);
+    const { netMxn } = calculateMxnAmount(
+      deposit.amountCrypto,
+      quote.priceMxn,
+      spreadPercent
+    );
+
+    // Actualizar depósito: CONFIRMED + acreditar MXN
     await db
       .update(deposits)
       .set({
-        status: "CONFIRMED",
+        status: "CREDITED",
         confirmations: data.confirmations,
         confirmedAt: new Date(),
+        creditedAt: new Date(),
+        amountMxn: netMxn.toFixed(2),
+        exchangeRate: quote.priceMxn.toFixed(6),
+        spreadPercent: spreadPercent.toFixed(2),
       })
       .where(eq(deposits.id, data.depositId));
 
-    console.log(`Deposit ${data.depositId} confirmed with ${data.confirmations} confirmations`);
+    // Incrementar balance del comercio
+    await db
+      .update(merchants)
+      .set({
+        balanceMxn: sql`${merchants.balanceMxn} + ${netMxn.toFixed(2)}`,
+        updatedAt: new Date(),
+      })
+      .where(eq(merchants.id, merchant.id));
+
+    console.log(`Deposit ${data.depositId} confirmed + credited ${netMxn.toFixed(2)} MXN to merchant ${merchant.id}`);
 
     return NextResponse.json({
       success: true,
       data: {
         depositId: data.depositId,
-        status: "CONFIRMED",
+        status: "CREDITED",
         confirmations: data.confirmations,
+        amountMxn: netMxn.toFixed(2),
       },
     });
   } catch (error) {
