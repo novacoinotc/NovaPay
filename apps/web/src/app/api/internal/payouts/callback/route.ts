@@ -8,9 +8,9 @@ import { BUSINESS_RULES } from "@novapay/shared";
 const payoutCallbackSchema = z.object({
   externalId: z.string().uuid(), // withdrawalId de NovaPay
   payoutId: z.string(),
-  status: z.enum(["COMPLETED", "FAILED"]),
-  claveRastreo: z.string().optional(),
-  failureReason: z.string().optional(),
+  status: z.enum(["PROCESSING", "COMPLETED", "FAILED"]),
+  claveRastreo: z.string().nullable().optional(),
+  failureReason: z.string().nullable().optional(),
 });
 
 function verifyHmacSignature(rawBody: string, signature: string, secret: string): boolean {
@@ -68,6 +68,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         data: { message: "Already processed", status: withdrawal.status },
+      });
+    }
+
+    if (data.status === "PROCESSING") {
+      await db
+        .update(withdrawals)
+        .set({ status: "PROCESSING" })
+        .where(eq(withdrawals.id, data.externalId));
+
+      console.log(`Withdrawal ${data.externalId} is processing`);
+      return NextResponse.json({
+        success: true,
+        data: { externalId: data.externalId, status: "PROCESSING" },
       });
     }
 

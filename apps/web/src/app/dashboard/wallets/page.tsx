@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Copy, ExternalLink, QrCode, Plus, Loader2, Check } from "lucide-react";
+import { Copy, ExternalLink, QrCode, Plus, Loader2, Check, AlertTriangle } from "lucide-react";
 import QRCode from "qrcode";
 
 interface Wallet {
@@ -161,72 +161,93 @@ export default function WalletsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-          {wallets.map((wallet) => (
-            <div key={wallet.id} className="glass-card p-4 sm:p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div
-                  className={`h-10 w-10 rounded-xl ${
-                    assetInfo[wallet.asset]?.color || "bg-zinc-500"
-                  } flex items-center justify-center text-white font-bold text-sm`}
-                >
-                  {wallet.asset.charAt(0)}
-                </div>
-                <div>
-                  <h3 className="font-semibold text-zinc-100">
-                    {assetInfo[wallet.asset]?.name || wallet.asset}
-                  </h3>
-                  <p className="text-sm text-zinc-500">{wallet.network}</p>
-                </div>
-              </div>
+          {wallets.map((wallet) => {
+            const isEthMaintenance = wallet.network === "ETHEREUM";
 
-              <div className="bg-white/[0.03] rounded-xl p-3 sm:p-4 mb-4 border border-white/[0.06]">
-                <p className="text-xs text-zinc-500 mb-1">Dirección de depósito</p>
-                <div className="flex items-center gap-2">
-                  <code className="text-xs sm:text-sm text-zinc-200 break-all flex-1 font-mono">
-                    {wallet.address}
-                  </code>
-                  <button
-                    onClick={() => copyAddress(wallet.address)}
-                    className="p-2 hover:bg-white/[0.08] rounded-lg flex-shrink-0 transition-colors"
-                    title="Copiar dirección"
+            return (
+              <div key={wallet.id} className="glass-card p-4 sm:p-6 relative overflow-hidden">
+                {isEthMaintenance && (
+                  <div className="absolute inset-0 bg-[#070b14]/70 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center">
+                    <AlertTriangle className="h-8 w-8 text-amber-400 mb-2" />
+                    <p className="text-sm font-medium text-amber-400">En mantenimiento</p>
+                    <p className="text-xs text-zinc-500 mt-1">Red Ethereum no disponible</p>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-3 mb-4">
+                  <div
+                    className={`h-10 w-10 rounded-xl ${
+                      assetInfo[wallet.asset]?.color || "bg-zinc-500"
+                    } flex items-center justify-center text-white font-bold text-sm`}
                   >
-                    {copied === wallet.address ? (
-                      <Check className="h-4 w-4 text-emerald-400" />
-                    ) : (
-                      <Copy className="h-4 w-4 text-zinc-400" />
+                    {wallet.asset.charAt(0)}
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-zinc-100">
+                      {assetInfo[wallet.asset]?.name || wallet.asset}
+                    </h3>
+                    <p className="text-sm text-zinc-500">{wallet.network}</p>
+                  </div>
+                  {isEthMaintenance && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                      Mantenimiento
+                    </span>
+                  )}
+                </div>
+
+                <div className="bg-white/[0.03] rounded-xl p-3 sm:p-4 mb-4 border border-white/[0.06]">
+                  <p className="text-xs text-zinc-500 mb-1">Dirección de depósito</p>
+                  <div className="flex items-center gap-2">
+                    <code className="text-xs sm:text-sm text-zinc-200 break-all flex-1 font-mono">
+                      {wallet.address}
+                    </code>
+                    {!isEthMaintenance && (
+                      <>
+                        <button
+                          onClick={() => copyAddress(wallet.address)}
+                          className="p-2 hover:bg-white/[0.08] rounded-lg flex-shrink-0 transition-colors"
+                          title="Copiar dirección"
+                        >
+                          {copied === wallet.address ? (
+                            <Check className="h-4 w-4 text-emerald-400" />
+                          ) : (
+                            <Copy className="h-4 w-4 text-zinc-400" />
+                          )}
+                        </button>
+                        <button
+                          onClick={() =>
+                            setQrModal({ address: wallet.address, asset: wallet.asset })
+                          }
+                          className="p-2 hover:bg-white/[0.08] rounded-lg flex-shrink-0 transition-colors"
+                          title="Mostrar QR"
+                        >
+                          <QrCode className="h-4 w-4 text-zinc-400" />
+                        </button>
+                      </>
                     )}
-                  </button>
-                  <button
-                    onClick={() =>
-                      setQrModal({ address: wallet.address, asset: wallet.asset })
-                    }
-                    className="p-2 hover:bg-white/[0.08] rounded-lg flex-shrink-0 transition-colors"
-                    title="Mostrar QR"
-                  >
-                    <QrCode className="h-4 w-4 text-zinc-400" />
-                  </button>
+                  </div>
                 </div>
-              </div>
 
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="text-xs text-zinc-500">Balance en wallet</p>
-                  <p className="text-lg font-semibold text-zinc-100">
-                    {parseFloat(wallet.balance).toFixed(2)}{" "}
-                    {wallet.asset.split("_")[0]}
-                  </p>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="text-xs text-zinc-500">Balance en wallet</p>
+                    <p className="text-lg font-semibold text-zinc-100">
+                      {parseFloat(wallet.balance).toFixed(2)}{" "}
+                      {wallet.asset.split("_")[0]}
+                    </p>
+                  </div>
+                  <a
+                    href={`${assetInfo[wallet.asset]?.explorer || ""}${wallet.address}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-xs sm:text-sm text-primary-400 hover:text-primary-300 transition-colors"
+                  >
+                    Ver en explorer <ExternalLink className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  </a>
                 </div>
-                <a
-                  href={`${assetInfo[wallet.asset]?.explorer || ""}${wallet.address}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-xs sm:text-sm text-primary-400 hover:text-primary-300 transition-colors"
-                >
-                  Ver en explorer <ExternalLink className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                </a>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

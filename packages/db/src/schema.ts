@@ -16,6 +16,11 @@ import { relations } from "drizzle-orm";
 // ENUMS
 // ============================================================
 
+export const merchantRoleEnum = pgEnum("merchant_role", [
+  "MERCHANT",
+  "ADMIN",
+]);
+
 export const merchantStatusEnum = pgEnum("merchant_status", [
   "PENDING",
   "ACTIVE",
@@ -78,6 +83,9 @@ export const merchants = pgTable(
     balanceMxn: decimal("balance_mxn", { precision: 15, scale: 2 })
       .notNull()
       .default("0.00"),
+
+    // Rol
+    role: merchantRoleEnum("role").notNull().default("MERCHANT"),
 
     // Estado
     status: merchantStatusEnum("status").notNull().default("PENDING"),

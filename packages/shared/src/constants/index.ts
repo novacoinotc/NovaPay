@@ -104,7 +104,7 @@ export const BUSINESS_RULES = {
   // Retiros SPEI
   MIN_WITHDRAWAL_MXN: 100,
   MAX_WITHDRAWAL_MXN: 500000,
-  WITHDRAWAL_FEE_MXN: 10,
+  WITHDRAWAL_FEE_MXN: 0,
 
   // Polling del worker
   WALLET_POLL_INTERVAL_MS: 15000, // 15 segundos

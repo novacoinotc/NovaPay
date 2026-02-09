@@ -175,7 +175,6 @@ export class WalletMonitor {
     wallet: typeof wallets.$inferSelect
   ): Promise<void> {
     if (!this.ethProvider) {
-      console.warn("Ethereum provider not initialized");
       return;
     }
 

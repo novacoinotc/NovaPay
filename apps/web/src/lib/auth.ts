@@ -10,6 +10,7 @@ declare module "next-auth" {
       id: string;
       email: string;
       businessName: string;
+      role: string;
     };
   }
 
@@ -17,6 +18,7 @@ declare module "next-auth" {
     id: string;
     email: string;
     businessName: string;
+    role: string;
   }
 }
 
@@ -25,6 +27,7 @@ declare module "next-auth/jwt" {
     id: string;
     email: string;
     businessName: string;
+    role: string;
   }
 }
 
@@ -73,6 +76,7 @@ export const authOptions: NextAuthOptions = {
           id: merchant.id,
           email: merchant.email,
           businessName: merchant.businessName,
+          role: merchant.role,
         };
       },
     }),
@@ -83,6 +87,7 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
         token.email = user.email;
         token.businessName = user.businessName;
+        token.role = user.role;
       }
       return token;
     },
@@ -91,6 +96,7 @@ export const authOptions: NextAuthOptions = {
         id: token.id,
         email: token.email,
         businessName: token.businessName,
+        role: token.role,
       };
       return session;
     },

@@ -3,7 +3,15 @@ import { NextResponse } from "next/server";
 
 export default withAuth(
   function middleware(req) {
-    // Permitir acceso si está autenticado
+    const token = req.nextauth.token;
+
+    // Proteger rutas /admin - solo ADMIN
+    if (req.nextUrl.pathname.startsWith("/admin") || req.nextUrl.pathname.startsWith("/api/admin")) {
+      if (token?.role !== "ADMIN") {
+        return NextResponse.redirect(new URL("/dashboard", req.url));
+      }
+    }
+
     return NextResponse.next();
   },
   {
