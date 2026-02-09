@@ -2,60 +2,53 @@ import { getDb, withdrawals, merchants } from "@novapay/db";
 import { eq, sql } from "@novapay/db";
 import { generateSpeiReference, BUSINESS_RULES } from "@novapay/shared";
 
-// Configuración del proveedor SPEI (OPM, Finco, etc.)
-const SPEI_CONFIG = {
-  apiUrl: process.env.SPEI_API_URL || "",
-  apiKey: process.env.SPEI_API_KEY || "",
-  merchantId: process.env.SPEI_MERCHANT_ID || "",
-};
+// NovaCore configuration
+const NOVACORE_API_URL = process.env.NOVACORE_API_URL || "";
+const NOVACORE_API_KEY = process.env.NOVACORE_API_KEY || "";
 
-interface SpeiTransferRequest {
-  amount: number;
-  clabe: string;
-  beneficiaryName: string;
-  concept: string;
-  reference: string;
-}
-
-interface SpeiTransferResponse {
+interface NovaCorePayoutResponse {
   success: boolean;
-  trackingId?: string;
+  payoutId?: string;
+  status?: string;
+  trackingKey?: string;
   error?: string;
 }
 
 export class SpeiService {
   /**
-   * Envía una transferencia SPEI
+   * Envía instrucción de pago a NovaCore
    */
-  static async sendTransfer(
-    request: SpeiTransferRequest
-  ): Promise<SpeiTransferResponse> {
-    // Si no hay configuración SPEI, simular respuesta
-    if (!SPEI_CONFIG.apiUrl || !SPEI_CONFIG.apiKey) {
-      console.log("SPEI not configured, simulating transfer:", request);
+  static async sendToNovaCore(
+    externalId: string,
+    amount: number,
+    clabe: string,
+    beneficiaryName: string,
+    concept: string,
+    reference: string
+  ): Promise<NovaCorePayoutResponse> {
+    if (!NOVACORE_API_URL || !NOVACORE_API_KEY) {
+      console.warn("NovaCore not configured, simulating payout");
       return {
         success: true,
-        trackingId: `SIM-${Date.now()}`,
+        payoutId: `SIM-${Date.now()}`,
+        status: "QUEUED",
       };
     }
 
     try {
-      // TODO: Implementar llamada real al proveedor SPEI
-      // Esto dependerá del proveedor específico (OPM, Finco, etc.)
-
-      const response = await fetch(`${SPEI_CONFIG.apiUrl}/transfers`, {
+      const response = await fetch(`${NOVACORE_API_URL}/api/v1/payouts`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${SPEI_CONFIG.apiKey}`,
+          Authorization: `Bearer ${NOVACORE_API_KEY}`,
         },
         body: JSON.stringify({
-          merchant_id: SPEI_CONFIG.merchantId,
-          amount: request.amount,
-          clabe_destino: request.clabe,
-          beneficiary_name: request.beneficiaryName,
-          concept: request.concept,
-          reference: request.reference,
+          externalId,
+          amount,
+          clabe,
+          beneficiaryName,
+          concept,
+          reference,
         }),
       });
 
@@ -64,25 +57,27 @@ export class SpeiService {
       if (!response.ok) {
         return {
           success: false,
-          error: data.message || "Error en la transferencia SPEI",
+          error: data.error?.message || data.message || `HTTP ${response.status}`,
         };
       }
 
       return {
         success: true,
-        trackingId: data.tracking_id || data.id,
+        payoutId: data.payoutId,
+        status: data.status,
+        trackingKey: data.trackingKey,
       };
     } catch (error: any) {
-      console.error("SPEI transfer error:", error);
+      console.error("NovaCore payout error:", error);
       return {
         success: false,
-        error: error.message || "Error de conexión con SPEI",
+        error: error.message || "Error de conexión con NovaCore",
       };
     }
   }
 
   /**
-   * Procesa un retiro pendiente enviando SPEI
+   * Procesa un retiro enviando instrucción a NovaCore
    */
   static async processWithdrawal(withdrawalId: string): Promise<{
     success: boolean;
@@ -90,7 +85,6 @@ export class SpeiService {
   }> {
     const db = getDb();
 
-    // Obtener retiro
     const [withdrawal] = await db
       .select()
       .from(withdrawals)
@@ -105,7 +99,6 @@ export class SpeiService {
       return { success: false, error: "Retiro ya procesado" };
     }
 
-    // Obtener comercio para el nombre
     const [merchant] = await db
       .select()
       .from(merchants)
@@ -122,30 +115,29 @@ export class SpeiService {
       .set({ status: "PROCESSING" })
       .where(eq(withdrawals.id, withdrawalId));
 
-    // Generar referencia
     const reference = generateSpeiReference();
 
-    // Enviar SPEI
-    const result = await this.sendTransfer({
-      amount: parseFloat(withdrawal.netAmountMxn),
-      clabe: withdrawal.clabe,
-      beneficiaryName: merchant.businessName,
-      concept: `NovaPay - Retiro ${withdrawalId.slice(0, 8)}`,
-      reference,
-    });
+    // Enviar instrucción a NovaCore
+    const result = await this.sendToNovaCore(
+      withdrawalId, // externalId = withdrawalId de NovaPay
+      parseFloat(withdrawal.netAmountMxn),
+      withdrawal.clabe,
+      merchant.businessName,
+      `NovaPay - Pago ${withdrawalId.slice(0, 8)}`,
+      reference
+    );
 
     if (result.success) {
       await db
         .update(withdrawals)
         .set({
-          status: "COMPLETED",
+          status: "PROCESSING",
           speiReference: reference,
-          speiTrackingId: result.trackingId,
-          processedAt: new Date(),
+          speiTrackingId: result.payoutId,
         })
         .where(eq(withdrawals.id, withdrawalId));
 
-      console.log(`Withdrawal ${withdrawalId} completed with tracking ${result.trackingId}`);
+      console.log(`Withdrawal ${withdrawalId} sent to NovaCore: ${result.payoutId}`);
       return { success: true };
     } else {
       await db
@@ -156,7 +148,7 @@ export class SpeiService {
         })
         .where(eq(withdrawals.id, withdrawalId));
 
-      // Reembolsar el balance al comercio en caso de fallo
+      // Reembolsar el balance al comercio
       const refundAmount = parseFloat(withdrawal.amountMxn) + BUSINESS_RULES.WITHDRAWAL_FEE_MXN;
       await db
         .update(merchants)
@@ -166,8 +158,7 @@ export class SpeiService {
         })
         .where(eq(merchants.id, withdrawal.merchantId));
 
-      console.log(`Refunded ${refundAmount.toFixed(2)} MXN to merchant ${withdrawal.merchantId} after failed withdrawal`);
-
+      console.error(`Withdrawal ${withdrawalId} failed: ${result.error}, refunded ${refundAmount} MXN`);
       return { success: false, error: result.error };
     }
   }
@@ -182,6 +173,8 @@ export class SpeiService {
       .select()
       .from(withdrawals)
       .where(eq(withdrawals.status, "PENDING"));
+
+    if (pendingWithdrawals.length === 0) return;
 
     console.log(`Processing ${pendingWithdrawals.length} pending withdrawals...`);
 
