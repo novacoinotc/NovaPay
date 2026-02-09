@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import { ArrowDownToLine, ArrowUpFromLine, Wallet, TrendingUp, Loader2 } from "lucide-react";
+import { ArrowDownToLine, ArrowUpFromLine, Wallet, TrendingUp, Loader2, ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 interface Stats {
@@ -52,56 +52,58 @@ export default function DashboardPage() {
   }
 
   return (
-    <div>
+    <div className="animate-fade-in-up">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-slate-100">
+        <h1 className="text-2xl font-bold text-zinc-100">
           Bienvenido, {session?.user?.businessName}
         </h1>
-        <p className="text-slate-400 mt-1">
+        <p className="text-zinc-400 mt-1">
           Aquí tienes el resumen de tu actividad
         </p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="glass-card p-6">
-          <div className="flex items-center gap-4">
-            <div className="h-12 w-12 rounded-full bg-green-500/10 flex items-center justify-center">
-              <Wallet className="h-6 w-6 text-green-400" />
+        <div className="gradient-border-card">
+          <div className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                <Wallet className="h-6 w-6 text-emerald-400" />
+              </div>
+              <div>
+                <p className="text-sm text-zinc-400">Saldo disponible</p>
+                <p className="text-2xl font-bold text-zinc-100">
+                  ${(stats?.balanceMxn ?? 0).toLocaleString("es-MX", { minimumFractionDigits: 2 })}
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm text-slate-400">Saldo disponible</p>
-              <p className="text-2xl font-bold text-slate-100">
-                ${(stats?.balanceMxn ?? 0).toLocaleString("es-MX", { minimumFractionDigits: 2 })} MXN
-              </p>
-            </div>
+            <Link
+              href="/dashboard/withdrawals"
+              className="mt-4 block text-center py-2 bg-emerald-500/10 text-emerald-400 rounded-xl hover:bg-emerald-500/20 text-sm font-medium transition-all duration-200 border border-emerald-500/10 hover:border-emerald-500/20"
+            >
+              Retirar fondos
+            </Link>
           </div>
-          <Link
-            href="/dashboard/withdrawals"
-            className="mt-4 block text-center py-2 bg-green-500/10 text-green-400 rounded-lg hover:bg-green-500/20 text-sm font-medium transition-colors"
-          >
-            Retirar fondos
-          </Link>
         </div>
 
         <div className="glass-card p-6">
           <div className="flex items-center gap-4">
-            <div className="h-12 w-12 rounded-full bg-blue-500/10 flex items-center justify-center">
-              <ArrowDownToLine className="h-6 w-6 text-blue-400" />
+            <div className="h-12 w-12 rounded-2xl bg-primary-500/10 border border-primary-500/20 flex items-center justify-center">
+              <ArrowDownToLine className="h-6 w-6 text-primary-400" />
             </div>
             <div>
-              <p className="text-sm text-slate-400">Depósitos recibidos</p>
-              <p className="text-2xl font-bold text-slate-100">
+              <p className="text-sm text-zinc-400">Depósitos recibidos</p>
+              <p className="text-2xl font-bold text-zinc-100">
                 {stats?.deposits.total || 0}
               </p>
             </div>
           </div>
           {stats?.deposits.pending ? (
-            <p className="mt-4 text-sm text-yellow-400 bg-yellow-500/10 rounded-lg py-2 text-center">
+            <p className="mt-4 text-sm text-accent-400 bg-accent-500/10 rounded-xl py-2 text-center border border-accent-500/10">
               {stats.deposits.pending} pendiente(s)
             </p>
           ) : (
-            <p className="mt-4 text-sm text-slate-500 text-center py-2">
+            <p className="mt-4 text-sm text-zinc-500 text-center py-2">
               Sin pendientes
             </p>
           )}
@@ -109,34 +111,34 @@ export default function DashboardPage() {
 
         <div className="glass-card p-6">
           <div className="flex items-center gap-4">
-            <div className="h-12 w-12 rounded-full bg-purple-500/10 flex items-center justify-center">
-              <ArrowUpFromLine className="h-6 w-6 text-purple-400" />
+            <div className="h-12 w-12 rounded-2xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center">
+              <ArrowUpFromLine className="h-6 w-6 text-pink-400" />
             </div>
             <div>
-              <p className="text-sm text-slate-400">Retiros realizados</p>
-              <p className="text-2xl font-bold text-slate-100">
+              <p className="text-sm text-zinc-400">Retiros realizados</p>
+              <p className="text-2xl font-bold text-zinc-100">
                 {stats?.withdrawals.completed || 0}
               </p>
             </div>
           </div>
-          <p className="mt-4 text-sm text-slate-500 text-center py-2">
+          <p className="mt-4 text-sm text-zinc-500 text-center py-2">
             Total: ${(stats?.withdrawals?.totalMxn ?? 0).toLocaleString("es-MX", { minimumFractionDigits: 2 })} MXN
           </p>
         </div>
 
         <div className="glass-card p-6">
           <div className="flex items-center gap-4">
-            <div className="h-12 w-12 rounded-full bg-cyan-500/10 flex items-center justify-center">
-              <TrendingUp className="h-6 w-6 text-cyan-400" />
+            <div className="h-12 w-12 rounded-2xl bg-accent-500/10 border border-accent-500/20 flex items-center justify-center">
+              <TrendingUp className="h-6 w-6 text-accent-400" />
             </div>
             <div>
-              <p className="text-sm text-slate-400">Volumen total</p>
-              <p className="text-2xl font-bold text-slate-100">
-                ${(stats?.deposits?.totalMxn ?? 0).toLocaleString("es-MX", { minimumFractionDigits: 2 })} MXN
+              <p className="text-sm text-zinc-400">Volumen total</p>
+              <p className="text-2xl font-bold text-zinc-100">
+                ${(stats?.deposits?.totalMxn ?? 0).toLocaleString("es-MX", { minimumFractionDigits: 2 })}
               </p>
             </div>
           </div>
-          <p className="mt-4 text-sm text-slate-500 text-center py-2">
+          <p className="mt-4 text-sm text-zinc-500 text-center py-2">
             Acreditado en total
           </p>
         </div>
@@ -144,32 +146,32 @@ export default function DashboardPage() {
 
       {/* Quick actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Link
-          href="/dashboard/wallets"
-          className="glass-card p-6 transition-all"
-        >
-          <h3 className="font-semibold text-slate-100 mb-2">Ver mis wallets</h3>
-          <p className="text-sm text-slate-400">
+        <Link href="/dashboard/wallets" className="glass-card p-6 group">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="font-semibold text-zinc-100">Ver mis wallets</h3>
+            <ArrowRight className="h-4 w-4 text-zinc-500 group-hover:text-primary-400 transition-colors" />
+          </div>
+          <p className="text-sm text-zinc-400">
             Consulta tus direcciones de depósito y genera códigos QR
           </p>
         </Link>
 
-        <Link
-          href="/dashboard/deposits"
-          className="glass-card p-6 transition-all"
-        >
-          <h3 className="font-semibold text-slate-100 mb-2">Historial de depósitos</h3>
-          <p className="text-sm text-slate-400">
+        <Link href="/dashboard/deposits" className="glass-card p-6 group">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="font-semibold text-zinc-100">Historial de depósitos</h3>
+            <ArrowRight className="h-4 w-4 text-zinc-500 group-hover:text-primary-400 transition-colors" />
+          </div>
+          <p className="text-sm text-zinc-400">
             Revisa todos los pagos crypto que has recibido
           </p>
         </Link>
 
-        <Link
-          href="/dashboard/settings"
-          className="glass-card p-6 transition-all"
-        >
-          <h3 className="font-semibold text-slate-100 mb-2">Configuración</h3>
-          <p className="text-sm text-slate-400">
+        <Link href="/dashboard/settings" className="glass-card p-6 group">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="font-semibold text-zinc-100">Configuración</h3>
+            <ArrowRight className="h-4 w-4 text-zinc-500 group-hover:text-primary-400 transition-colors" />
+          </div>
+          <p className="text-sm text-zinc-400">
             Ajusta SPEI automático y otros parámetros
           </p>
         </Link>

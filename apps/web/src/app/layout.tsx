@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { JetBrains_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import { SessionProvider } from "@/components/providers/session-provider";
 import "./globals.css";
 
-const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"] });
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "NovaPay - Crypto Payment Gateway",
@@ -17,7 +17,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es">
-      <body className={jetbrainsMono.className}>
+      <body className={inter.className}>
         <SessionProvider>{children}</SessionProvider>
       </body>
     </html>

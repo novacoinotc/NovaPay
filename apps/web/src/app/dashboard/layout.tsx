@@ -31,16 +31,16 @@ export default function DashboardLayout({
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
+      <div className="min-h-screen bg-[#09090b] flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f]">
+    <div className="min-h-screen bg-[#09090b] bg-grid">
       {/* Sidebar */}
-      <div className="fixed inset-y-0 left-0 w-64 bg-[#050508] border-r border-white/[0.06] z-10">
+      <div className="fixed inset-y-0 left-0 w-64 bg-[#09090b]/95 backdrop-blur-xl border-r border-white/[0.06] z-20">
         <div className="flex h-16 items-center px-6 border-b border-white/[0.06]">
           <Link href="/dashboard" className="text-xl font-bold gradient-text">
             NovaPay
@@ -49,12 +49,19 @@ export default function DashboardLayout({
 
         {/* User info */}
         <div className="px-4 py-4 border-b border-white/[0.06]">
-          <p className="text-sm font-medium text-slate-100 truncate">
-            {session?.user?.businessName}
-          </p>
-          <p className="text-xs text-slate-500 truncate">
-            {session?.user?.email}
-          </p>
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center text-white text-xs font-bold">
+              {session?.user?.businessName?.charAt(0) || "N"}
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-zinc-100 truncate">
+                {session?.user?.businessName}
+              </p>
+              <p className="text-xs text-zinc-500 truncate">
+                {session?.user?.email}
+              </p>
+            </div>
+          </div>
         </div>
 
         <nav className="mt-4 px-3">
@@ -67,14 +74,14 @@ export default function DashboardLayout({
               <Link
                 key={item.name}
                 href={item.href}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg mb-1 transition-colors ${
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl mb-1 transition-all duration-200 ${
                   isActive
-                    ? "bg-primary-500/10 text-cyan-400 border border-primary-500/20 shadow-glow"
-                    : "text-slate-400 hover:bg-white/[0.05] hover:text-slate-200"
+                    ? "bg-primary-500/10 text-primary-300 shadow-glow border border-primary-500/20"
+                    : "text-zinc-400 hover:bg-white/[0.05] hover:text-zinc-200"
                 }`}
               >
                 <item.icon className="h-5 w-5" />
-                {item.name}
+                <span className="text-sm font-medium">{item.name}</span>
               </Link>
             );
           })}
@@ -83,22 +90,22 @@ export default function DashboardLayout({
         <div className="absolute bottom-0 left-0 right-0 p-3 border-t border-white/[0.06]">
           <button
             onClick={() => signOut({ callbackUrl: "/" })}
-            className="flex items-center gap-3 px-3 py-2 text-red-400 rounded-lg hover:bg-red-500/10 w-full"
+            className="flex items-center gap-3 px-3 py-2.5 text-red-400 rounded-xl hover:bg-red-500/10 w-full transition-all duration-200"
           >
             <LogOut className="h-5 w-5" />
-            Cerrar sesión
+            <span className="text-sm font-medium">Cerrar sesión</span>
           </button>
         </div>
       </div>
 
       {/* Main content */}
       <div className="pl-64">
-        <header className="bg-[#050508]/80 backdrop-blur-sm border-b border-white/[0.06] h-16 flex items-center px-8 sticky top-0 z-10">
-          <h1 className="text-lg font-medium text-slate-100">
+        <header className="bg-[#09090b]/80 backdrop-blur-xl border-b border-white/[0.06] h-16 flex items-center px-8 sticky top-0 z-10">
+          <h1 className="text-lg font-semibold text-zinc-100">
             {navigation.find((n) => pathname.startsWith(n.href))?.name || "Dashboard"}
           </h1>
         </header>
-        <main className="p-8">{children}</main>
+        <main className="p-8 animate-fade-in">{children}</main>
       </div>
     </div>
   );

@@ -24,12 +24,12 @@ const statusConfig: Record<
   string,
   { label: string; color: string; icon: React.ElementType }
 > = {
-  PENDING: { label: "Pendiente", color: "text-yellow-400 bg-yellow-500/10", icon: Clock },
-  CONFIRMED: { label: "Confirmado", color: "text-blue-400 bg-blue-500/10", icon: CheckCircle },
+  PENDING: { label: "Pendiente", color: "text-accent-400 bg-accent-500/10", icon: Clock },
+  CONFIRMED: { label: "Confirmado", color: "text-primary-400 bg-primary-500/10", icon: CheckCircle },
   SWEEPING: { label: "Procesando", color: "text-purple-400 bg-purple-500/10", icon: ArrowRight },
   SWEPT: { label: "Movido", color: "text-indigo-400 bg-indigo-500/10", icon: ArrowRight },
   CONVERTING: { label: "Convirtiendo", color: "text-orange-400 bg-orange-500/10", icon: ArrowRight },
-  CREDITED: { label: "Acreditado", color: "text-green-400 bg-green-500/10", icon: CheckCircle },
+  CREDITED: { label: "Acreditado", color: "text-emerald-400 bg-emerald-500/10", icon: CheckCircle },
   FAILED: { label: "Fallido", color: "text-red-400 bg-red-500/10", icon: XCircle },
 };
 
@@ -80,60 +80,48 @@ export default function DepositsPage() {
   }
 
   return (
-    <div>
+    <div className="animate-fade-in-up">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-slate-100">Historial de Depósitos</h1>
-        <p className="text-slate-400 mt-1">
+        <h1 className="text-2xl font-bold text-zinc-100">Historial de Depósitos</h1>
+        <p className="text-zinc-400 mt-1">
           {total} depósito{total !== 1 ? "s" : ""} en total
         </p>
       </div>
 
       {deposits.length === 0 ? (
         <div className="glass-card p-12 text-center">
-          <div className="h-16 w-16 rounded-full bg-white/[0.05] flex items-center justify-center mx-auto mb-4">
-            <Clock className="h-8 w-8 text-slate-500" />
+          <div className="h-16 w-16 rounded-2xl bg-white/[0.05] flex items-center justify-center mx-auto mb-4">
+            <Clock className="h-8 w-8 text-zinc-500" />
           </div>
-          <h3 className="text-lg font-medium text-slate-100 mb-2">
+          <h3 className="text-lg font-medium text-zinc-100 mb-2">
             Sin depósitos aún
           </h3>
-          <p className="text-slate-400">
+          <p className="text-zinc-400">
             Los depósitos que recibas en tus wallets aparecerán aquí
           </p>
         </div>
       ) : (
         <>
           <div className="glass-card overflow-hidden">
-            <table className="w-full">
-              <thead className="bg-white/[0.05] border-b border-white/[0.08]">
+            <table className="w-full table-dark">
+              <thead>
                 <tr>
-                  <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">
-                    Fecha
-                  </th>
-                  <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">
-                    TX Hash
-                  </th>
-                  <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">
-                    Crypto
-                  </th>
-                  <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">
-                    Monto
-                  </th>
-                  <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">
-                    MXN
-                  </th>
-                  <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">
-                    Estado
-                  </th>
+                  <th>Fecha</th>
+                  <th>TX Hash</th>
+                  <th>Crypto</th>
+                  <th>Monto</th>
+                  <th>MXN</th>
+                  <th>Estado</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/[0.05]">
+              <tbody>
                 {deposits.map((deposit) => {
                   const status = statusConfig[deposit.status] || statusConfig.PENDING;
                   const StatusIcon = status.icon;
 
                   return (
-                    <tr key={deposit.id} className="hover:bg-white/[0.03]">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400">
+                    <tr key={deposit.id}>
+                      <td className="text-zinc-400">
                         {new Date(deposit.detectedAt).toLocaleDateString("es-MX", {
                           day: "2-digit",
                           month: "short",
@@ -142,41 +130,35 @@ export default function DepositsPage() {
                           minute: "2-digit",
                         })}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td>
                         <a
                           href={`${explorerUrls[deposit.network] || ""}${deposit.txHash}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-sm text-cyan-400 hover:text-cyan-300 flex items-center gap-1 font-mono"
+                          className="text-primary-400 hover:text-primary-300 flex items-center gap-1 font-mono transition-colors"
                         >
                           {deposit.txHash.slice(0, 8)}...{deposit.txHash.slice(-6)}
                           <ExternalLink className="h-3 w-3" />
                         </a>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-medium text-slate-200">
-                          {deposit.asset.replace("_", " ")}
-                        </span>
+                      <td className="font-medium text-zinc-200">
+                        {deposit.asset.replace("_", " ")}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-medium text-slate-200">
-                          {parseFloat(deposit.amountCrypto).toFixed(2)}{" "}
-                          {deposit.asset.split("_")[0]}
-                        </span>
+                      <td className="font-medium text-zinc-200">
+                        {parseFloat(deposit.amountCrypto).toFixed(2)}{" "}
+                        {deposit.asset.split("_")[0]}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td>
                         {deposit.amountMxn ? (
-                          <span className="text-sm font-medium text-green-400">
+                          <span className="font-medium text-emerald-400">
                             {formatMxn(deposit.amountMxn)}
                           </span>
                         ) : (
-                          <span className="text-sm text-slate-500">-</span>
+                          <span className="text-zinc-500">-</span>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${status.color}`}
-                        >
+                      <td>
+                        <span className={`badge ${status.color}`}>
                           <StatusIcon className="h-3 w-3" />
                           {status.label}
                         </span>
@@ -194,15 +176,15 @@ export default function DepositsPage() {
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="px-4 py-2 text-sm text-slate-400 hover:text-slate-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Anterior
               </button>
-              <span className="text-sm text-slate-400">Página {page}</span>
+              <span className="text-sm text-zinc-400">Página {page}</span>
               <button
                 onClick={() => setPage((p) => p + 1)}
                 disabled={!hasMore}
-                className="px-4 py-2 text-sm text-slate-400 hover:text-slate-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Siguiente
               </button>
