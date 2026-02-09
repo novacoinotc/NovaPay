@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { createHmac, timingSafeEqual } from "crypto";
 import { getDb, withdrawals, merchants } from "@novapay/db";
 import { eq, sql } from "@novapay/db";
 import { BUSINESS_RULES } from "@novapay/shared";
@@ -12,20 +13,38 @@ const payoutCallbackSchema = z.object({
   failureReason: z.string().optional(),
 });
 
+function verifyHmacSignature(rawBody: string, signature: string, secret: string): boolean {
+  const expected = createHmac("sha256", secret).update(rawBody).digest("hex");
+  try {
+    return timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
+  } catch {
+    return false;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
-    // Verificar API key de NovaCore
-    const apiKey = request.headers.get("x-api-key");
-    const callbackSecret = process.env.NOVACORE_CALLBACK_SECRET || process.env.INTERNAL_API_KEY;
+    // Verificar firma HMAC-SHA256 de NovaCore
+    const signature = request.headers.get("x-novapay-signature");
+    const callbackSecret = process.env.NOVACORE_CALLBACK_SECRET;
 
-    if (!callbackSecret || apiKey !== callbackSecret) {
+    if (!callbackSecret || !signature) {
       return NextResponse.json(
-        { success: false, error: { code: "UNAUTHORIZED", message: "Invalid API key" } },
+        { success: false, error: { code: "UNAUTHORIZED", message: "Missing signature" } },
         { status: 401 }
       );
     }
 
-    const body = await request.json();
+    const rawBody = await request.text();
+
+    if (!verifyHmacSignature(rawBody, signature, callbackSecret)) {
+      return NextResponse.json(
+        { success: false, error: { code: "UNAUTHORIZED", message: "Invalid signature" } },
+        { status: 401 }
+      );
+    }
+
+    const body = JSON.parse(rawBody);
     const data = payoutCallbackSchema.parse(body);
 
     const db = getDb();
