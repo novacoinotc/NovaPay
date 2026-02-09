@@ -4,6 +4,7 @@ import { getDb, deposits, merchants } from "@novapay/db";
 import { eq, sql } from "@novapay/db";
 import { getQuote } from "@novapay/crypto";
 import { calculateMxnAmount, CryptoAsset } from "@novapay/shared";
+import { SpeiService } from "@/lib/services/spei-service";
 
 // Schema de validación para depósito confirmado
 const depositConfirmedSchema = z.object({
@@ -100,6 +101,25 @@ export async function POST(request: NextRequest) {
       .where(eq(merchants.id, merchant.id));
 
     console.log(`Deposit ${data.depositId} confirmed + credited ${netMxn.toFixed(2)} MXN to merchant ${merchant.id}`);
+
+    // Si tiene auto-SPEI activado, crear retiro automático
+    if (merchant.autoSpeiEnabled) {
+      console.log(`Auto-SPEI enabled for merchant ${merchant.id}, creating withdrawal...`);
+
+      const { CreditService } = await import("@/lib/services/credit-service");
+
+      const withdrawalResult = await CreditService.processWithdrawal(
+        merchant.id,
+        netMxn
+      );
+
+      if (withdrawalResult.success && withdrawalResult.withdrawalId) {
+        await SpeiService.processWithdrawal(withdrawalResult.withdrawalId);
+        console.log(`Auto-SPEI withdrawal ${withdrawalResult.withdrawalId} sent to NovaCore`);
+      } else {
+        console.warn(`Auto-SPEI failed for merchant ${merchant.id}: ${withdrawalResult.error}`);
+      }
+    }
 
     return NextResponse.json({
       success: true,
