@@ -107,7 +107,7 @@ export const BUSINESS_RULES = {
   WITHDRAWAL_FEE_MXN: 0,
 
   // Polling del worker
-  WALLET_POLL_INTERVAL_MS: 15000, // 15 segundos
+  WALLET_POLL_INTERVAL_MS: 30000, // 30 segundos (evitar rate limit TronGrid)
   PRICE_POLL_INTERVAL_MS: 30000, // 30 segundos
 
   // Rate limiting

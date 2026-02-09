@@ -1,6 +1,6 @@
 import { getDb, deposits, wallets, hotWalletTransactions } from "@novapay/db";
 import { eq, and, sql } from "@novapay/db";
-import { ASSET_CONFIG } from "@novapay/shared";
+import { ASSET_CONFIG, delay } from "@novapay/shared";
 import {
   tron,
   ethereum,
@@ -8,6 +8,8 @@ import {
   deriveEthWalletWithKey,
 } from "@novapay/crypto";
 import { notifyApi } from "../services/api-client";
+
+const DELAY_BETWEEN_SWEEPS_MS = 2000;
 
 // Master mnemonic para derivar keys - SOLO EN MEMORIA
 const MASTER_MNEMONIC = process.env.HD_WALLET_MNEMONIC!;
@@ -48,22 +50,40 @@ export class SweepProcessor {
 
   /**
    * Procesa sweeps por wallet - barre cuando el balance acumulado supera el mínimo
-   * En lugar de barrer cada depósito individual, revisa el balance real de la wallet
+   * Solo revisa wallets que tienen depósitos CREDITED pendientes de sweep
    */
   async processPendingSweeps(): Promise<void> {
     const db = getDb();
 
-    // Obtener wallets activas que tienen depósitos CREDITED (ya acreditados, pendientes de sweep)
+    // Solo obtener wallets que realmente tienen depósitos CREDITED
+    const walletsWithCredits = await db
+      .selectDistinct({ walletId: deposits.walletId })
+      .from(deposits)
+      .where(eq(deposits.status, "CREDITED"));
+
+    if (walletsWithCredits.length === 0) return;
+
+    const walletIds = new Set(walletsWithCredits.map((w) => w.walletId));
+
     const activeWallets = await db
       .select()
       .from(wallets)
       .where(eq(wallets.isActive, true));
 
-    for (const wallet of activeWallets) {
+    const walletsToSweep = activeWallets.filter((w) => walletIds.has(w.id));
+
+    if (walletsToSweep.length > 0) {
+      console.log(`Sweep: checking ${walletsToSweep.length} wallets with CREDITED deposits`);
+    }
+
+    for (let i = 0; i < walletsToSweep.length; i++) {
       try {
-        await this.checkAndSweepWallet(wallet);
+        await this.checkAndSweepWallet(walletsToSweep[i]);
       } catch (error) {
-        console.error(`Error processing sweep for wallet ${wallet.address}:`, error);
+        console.error(`Error processing sweep for wallet ${walletsToSweep[i].address}:`, error);
+      }
+      if (i < walletsToSweep.length - 1) {
+        await delay(DELAY_BETWEEN_SWEEPS_MS);
       }
     }
   }

@@ -4,9 +4,12 @@ import {
   BlockchainNetwork,
   NETWORK_CONFIG,
   ASSET_CONFIG,
+  delay,
 } from "@novapay/shared";
 import { tron, ethereum } from "@novapay/crypto";
 import { notifyApi } from "../services/api-client";
+
+const DELAY_BETWEEN_WALLETS_MS = 2000; // 2s entre cada wallet para evitar rate limit
 
 export class WalletMonitor {
   private tronClient: ReturnType<typeof tron.createTronClient> | null = null;
@@ -45,11 +48,34 @@ export class WalletMonitor {
       .from(wallets)
       .where(eq(wallets.isActive, true));
 
-    console.log(`Checking ${activeWallets.length} active wallets...`);
+    // Filtrar solo TRON (ETH no tiene provider configurado)
+    const tronWallets = activeWallets.filter((w) => w.network === "TRON");
+    const ethWallets = activeWallets.filter((w) => w.network === "ETHEREUM");
 
-    for (const wallet of activeWallets) {
+    console.log(`Checking ${tronWallets.length} TRON + ${ethWallets.length} ETH wallets...`);
+
+    // Cachear bloque actual una sola vez para todo el ciclo
+    let cachedBlockNumber: number | undefined;
+    if (this.tronClient && tronWallets.length > 0) {
+      cachedBlockNumber = await tron.getCurrentBlockNumber(this.tronClient);
+    }
+
+    for (let i = 0; i < tronWallets.length; i++) {
       try {
-        await this.checkWallet(wallet);
+        await this.checkTronWallet(tronWallets[i], cachedBlockNumber);
+      } catch (error) {
+        console.error(`Error checking wallet ${tronWallets[i].address}:`, error);
+      }
+      // Delay entre wallets para evitar rate limit (excepto la última)
+      if (i < tronWallets.length - 1) {
+        await delay(DELAY_BETWEEN_WALLETS_MS);
+      }
+    }
+
+    // ETH wallets (sin delay extra, usan RPC diferente)
+    for (const wallet of ethWallets) {
+      try {
+        await this.checkEthereumWallet(wallet);
       } catch (error) {
         console.error(`Error checking wallet ${wallet.address}:`, error);
       }
@@ -57,26 +83,11 @@ export class WalletMonitor {
   }
 
   /**
-   * Verifica una wallet específica por nuevos depósitos
-   */
-  private async checkWallet(wallet: typeof wallets.$inferSelect): Promise<void> {
-    switch (wallet.network) {
-      case "TRON":
-        await this.checkTronWallet(wallet);
-        break;
-      case "ETHEREUM":
-        await this.checkEthereumWallet(wallet);
-        break;
-      default:
-        console.log(`Network ${wallet.network} not yet supported`);
-    }
-  }
-
-  /**
    * Verifica una wallet Tron (USDT-TRC20)
    */
   private async checkTronWallet(
-    wallet: typeof wallets.$inferSelect
+    wallet: typeof wallets.$inferSelect,
+    cachedBlockNumber?: number
   ): Promise<void> {
     if (!this.tronClient) {
       console.warn("Tron client not initialized");
@@ -85,10 +96,12 @@ export class WalletMonitor {
 
     const db = getDb();
 
-    // Obtener transacciones recientes
+    // Obtener transacciones recientes (usando bloque cacheado)
     const transactions = await tron.getTrc20Transactions(
       this.tronClient,
-      wallet.address
+      wallet.address,
+      50,
+      cachedBlockNumber
     );
 
     if (transactions.length === 0) {

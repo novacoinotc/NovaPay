@@ -88,12 +88,27 @@ export async function getTrxBalance(
 }
 
 /**
+ * Obtiene el número de bloque actual (para cachear entre llamadas)
+ */
+export async function getCurrentBlockNumber(tronWeb: TronWeb): Promise<number> {
+  try {
+    const currentBlock = await tronWeb.trx.getCurrentBlock();
+    return currentBlock?.block_header?.raw_data?.number || 0;
+  } catch (error) {
+    console.error("Error getting current block:", error);
+    return 0;
+  }
+}
+
+/**
  * Obtiene transacciones TRC20 recientes de una dirección
+ * @param cachedBlockNumber - Número de bloque pre-cacheado para evitar llamadas extra
  */
 export async function getTrc20Transactions(
   tronWeb: TronWeb,
   address: string,
-  limit: number = 50
+  limit: number = 50,
+  cachedBlockNumber?: number
 ): Promise<TronTransaction[]> {
   try {
     const url = `${tronWeb.fullNode.host}/v1/accounts/${address}/transactions/trc20?limit=${limit}&contract_address=${USDT_CONTRACT}`;
@@ -105,25 +120,37 @@ export async function getTrc20Transactions(
       headers["TRON-PRO-API-KEY"] = apiKey;
     }
 
-    const response = await fetch(url, { headers });
+    // Retry con backoff en caso de 429
+    let response: Response | null = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      response = await fetch(url, { headers });
 
-    if (!response.ok) {
-      console.error(`TronGrid API error: HTTP ${response.status} for ${address}`);
+      if (response.status === 429) {
+        const waitMs = 2000 * (attempt + 1);
+        console.warn(`TronGrid 429 for ${address.slice(0, 10)}... retry in ${waitMs}ms (attempt ${attempt + 1}/3)`);
+        await new Promise((r) => setTimeout(r, waitMs));
+        continue;
+      }
+      break;
+    }
+
+    if (!response || !response.ok) {
+      console.error(`TronGrid API error: HTTP ${response?.status} for ${address}`);
       return [];
     }
 
     const data = (await response.json()) as { data?: Array<Record<string, any>> };
 
     if (!data.data || !Array.isArray(data.data)) {
-      console.warn(`TronGrid returned no data for ${address}:`, JSON.stringify(data).slice(0, 200));
       return [];
     }
 
-    console.log(`TronGrid: ${data.data.length} TRC20 transactions for ${address.slice(0, 10)}...`);
+    if (data.data.length > 0) {
+      console.log(`TronGrid: ${data.data.length} TRC20 txs for ${address.slice(0, 10)}...`);
+    }
 
-    // Obtener el bloque actual para calcular confirmaciones reales
-    const currentBlock = await tronWeb.trx.getCurrentBlock();
-    const currentBlockNumber = currentBlock?.block_header?.raw_data?.number || 0;
+    // Usar bloque cacheado o obtener uno nuevo
+    const currentBlockNumber = cachedBlockNumber ?? await getCurrentBlockNumber(tronWeb);
 
     return data.data.map((tx: any) => {
       // Calcular confirmaciones basado en la diferencia de bloques
