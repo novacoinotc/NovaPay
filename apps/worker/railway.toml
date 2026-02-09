@@ -1,0 +1,12 @@
+[build]
+builder = "nixpacks"
+buildCommand = "pnpm install && pnpm build"
+
+[deploy]
+startCommand = "pnpm start"
+restartPolicyType = "always"
+healthcheckPath = "/health"
+healthcheckTimeout = 30
+
+[service]
+internalPort = 3001
