@@ -257,14 +257,22 @@ export async function sweepWithMasterEnergy(
     }
 
     if (!usedEnergyDelegation) {
-      // Opción B: Enviar TRX para cubrir fees directamente (~30 TRX)
-      console.log(`Insufficient energy, sending TRX to ${merchantAddress} for fees...`);
-      const trxResult = await sendTrxForFees(tronWeb, masterPrivateKey, merchantAddress, 30);
-      if (!trxResult.success) {
-        return { success: false, error: `Failed to fund fees: ${trxResult.error}` };
+      // Opción B: Enviar TRX para cubrir fees directamente
+      // Verificar si la wallet ya tiene TRX suficiente (de intentos anteriores)
+      const existingTrx = await tronWeb.trx.getBalance(merchantAddress);
+      const existingTrxAmount = existingTrx / 1_000_000;
+
+      if (existingTrxAmount < 15) {
+        console.log(`Insufficient energy, sending TRX to ${merchantAddress} for fees (has ${existingTrxAmount.toFixed(1)} TRX)...`);
+        const trxResult = await sendTrxForFees(tronWeb, masterPrivateKey, merchantAddress, 30);
+        if (!trxResult.success) {
+          return { success: false, error: `Failed to fund fees: ${trxResult.error}` };
+        }
+        // Esperar a que la TX de TRX se confirme
+        await new Promise(resolve => setTimeout(resolve, 4000));
+      } else {
+        console.log(`Wallet ${merchantAddress} already has ${existingTrxAmount.toFixed(1)} TRX, skipping funding`);
       }
-      // Esperar a que la TX de TRX se confirme
-      await new Promise(resolve => setTimeout(resolve, 4000));
     }
 
     // Ejecutar el sweep
@@ -274,14 +282,24 @@ export async function sweepWithMasterEnergy(
     const contract = await tronWeb.contract().at(USDT_CONTRACT);
     const amountInBaseUnits = BigInt(Math.floor(parseFloat(amount) * 1_000_000));
 
-    const tx = await contract.methods
+    // shouldPollResponse: false para obtener el txHash inmediatamente
+    // sin esperar confirmación (evita timeout que retorna false)
+    const txResult = await contract.methods
       .transfer(toAddress, amountInBaseUnits.toString())
       .send({
         feeLimit: 100_000_000, // 100 TRX máximo
-        shouldPollResponse: true,
+        shouldPollResponse: false,
       });
 
-    console.log(`Sweep successful: ${tx}`);
+    // TronWeb puede devolver string (txHash) u objeto con txid
+    const txHash = typeof txResult === "string" ? txResult : txResult?.txid || txResult?.transaction?.txID;
+
+    if (!txHash) {
+      console.error("Sweep returned unexpected result:", txResult);
+      return { success: false, error: "No transaction hash returned" };
+    }
+
+    console.log(`Sweep successful: ${txHash}`);
 
     // Recuperar energía delegada en background
     if (usedEnergyDelegation) {
@@ -297,7 +315,7 @@ export async function sweepWithMasterEnergy(
 
     return {
       success: true,
-      txHash: tx,
+      txHash,
     };
   } catch (error: any) {
     console.error("Error in sweepWithMasterEnergy:", error);
