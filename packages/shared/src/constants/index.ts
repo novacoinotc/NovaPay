@@ -60,7 +60,7 @@ export const ASSET_CONFIG = {
     decimals: 6,
     contractAddress: "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t", // Mainnet
     minDeposit: "1", // 1 USDT mínimo
-    minSweep: "5", // 5 USDT mínimo para sweep
+    minSweep: "1", // 1 USDT mínimo para sweep
   },
   [CryptoAsset.USDT_ERC20]: {
     name: "Tether USD (ERC20)",

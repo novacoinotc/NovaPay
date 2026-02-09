@@ -122,6 +122,11 @@ export class WalletMonitor {
         continue;
       }
 
+      // Verificar si ya tiene suficientes confirmaciones
+      const requiredConfirmations =
+        NETWORK_CONFIG.TRON.requiredConfirmations;
+      const alreadyConfirmed = tx.confirmations >= requiredConfirmations;
+
       // Crear registro de depósito
       const [deposit] = await db
         .insert(deposits)
@@ -133,9 +138,14 @@ export class WalletMonitor {
           asset: "USDT_TRC20",
           amountCrypto: tx.amount,
           confirmations: tx.confirmations,
-          status: "PENDING",
+          status: alreadyConfirmed ? "CONFIRMED" : "PENDING",
+          ...(alreadyConfirmed ? { confirmedAt: new Date() } : {}),
         })
         .returning();
+
+      if (alreadyConfirmed) {
+        console.log(`  Already confirmed with ${tx.confirmations} confirmations`);
+      }
 
       // Notificar a la API
       await notifyApi("deposit-detected", {
@@ -147,6 +157,14 @@ export class WalletMonitor {
         amount: tx.amount,
         confirmations: tx.confirmations,
       });
+
+      if (alreadyConfirmed) {
+        await notifyApi("deposit-confirmed", {
+          depositId: deposit.id,
+          txHash: tx.txHash,
+          confirmations: tx.confirmations,
+        });
+      }
     }
   }
 
@@ -192,6 +210,11 @@ export class WalletMonitor {
         continue;
       }
 
+      // Verificar si ya tiene suficientes confirmaciones
+      const requiredConfs =
+        NETWORK_CONFIG.ETHEREUM.requiredConfirmations;
+      const alreadyConf = tx.confirmations >= requiredConfs;
+
       // Crear registro de depósito
       const [deposit] = await db
         .insert(deposits)
@@ -203,9 +226,14 @@ export class WalletMonitor {
           asset: "USDT_ERC20",
           amountCrypto: tx.amount,
           confirmations: tx.confirmations,
-          status: "PENDING",
+          status: alreadyConf ? "CONFIRMED" : "PENDING",
+          ...(alreadyConf ? { confirmedAt: new Date() } : {}),
         })
         .returning();
+
+      if (alreadyConf) {
+        console.log(`  Already confirmed with ${tx.confirmations} confirmations`);
+      }
 
       await notifyApi("deposit-detected", {
         depositId: deposit.id,
@@ -216,6 +244,14 @@ export class WalletMonitor {
         amount: tx.amount,
         confirmations: tx.confirmations,
       });
+
+      if (alreadyConf) {
+        await notifyApi("deposit-confirmed", {
+          depositId: deposit.id,
+          txHash: tx.txHash,
+          confirmations: tx.confirmations,
+        });
+      }
     }
   }
 
@@ -227,7 +263,11 @@ export class WalletMonitor {
     newConfirmations: number
   ): Promise<void> {
     if (deposit.status !== "PENDING") return;
-    if (newConfirmations <= deposit.confirmations) return;
+    if (newConfirmations < deposit.confirmations) return;
+    // Also check if already has enough confirmations even if count hasn't changed
+    const requiredConfs =
+      NETWORK_CONFIG[deposit.network as BlockchainNetwork].requiredConfirmations;
+    if (newConfirmations === deposit.confirmations && newConfirmations < requiredConfs) return;
 
     const db = getDb();
     const requiredConfirmations =
