@@ -52,7 +52,16 @@ export class SpeiService {
         }),
       });
 
-      const data = await response.json();
+      const text = await response.text();
+      let data: any;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        return {
+          success: false,
+          error: `NovaCore HTTP ${response.status}: ${text.slice(0, 200)}`,
+        };
+      }
 
       if (!response.ok) {
         return {
