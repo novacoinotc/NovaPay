@@ -91,10 +91,18 @@ export class WalletMonitor {
       wallet.address
     );
 
+    if (transactions.length === 0) {
+      return; // No transactions found
+    }
+
     // Filtrar transacciones entrantes (donde 'to' es nuestra wallet)
     const incomingTxs = transactions.filter(
       (tx) => tx.to.toLowerCase() === wallet.address.toLowerCase()
     );
+
+    if (incomingTxs.length > 0) {
+      console.log(`Wallet ${wallet.address}: ${incomingTxs.length} incoming TRC20 txs found`);
+    }
 
     for (const tx of incomingTxs) {
       // Verificar si ya tenemos este depósito registrado

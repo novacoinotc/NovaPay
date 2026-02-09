@@ -143,6 +143,17 @@ export class SweepProcessor {
         amount: balance,
       });
 
+      // Obtener depósitos CREDITED de esta wallet antes de marcarlos
+      const creditedDeposits = await db
+        .select({ id: deposits.id, amountCrypto: deposits.amountCrypto })
+        .from(deposits)
+        .where(
+          and(
+            eq(deposits.walletId, wallet.id),
+            eq(deposits.status, "CREDITED")
+          )
+        );
+
       // Marcar todos los depósitos CREDITED de esta wallet como SWEPT
       await db
         .update(deposits)
@@ -158,12 +169,14 @@ export class SweepProcessor {
           )
         );
 
-      // Notificar a la API
-      await notifyApi("deposit-swept", {
-        walletId: wallet.id,
-        sweepTxHash: result.txHash,
-        amountSwept: balance,
-      });
+      // Notificar a la API para cada depósito swept
+      for (const dep of creditedDeposits) {
+        await notifyApi("deposit-swept", {
+          depositId: dep.id,
+          sweepTxHash: result.txHash,
+          amountSwept: dep.amountCrypto,
+        });
+      }
     } else {
       console.error(`Sweep failed for wallet ${wallet.address}: ${result.error}`);
     }

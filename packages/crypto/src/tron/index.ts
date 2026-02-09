@@ -97,10 +97,29 @@ export async function getTrc20Transactions(
 ): Promise<TronTransaction[]> {
   try {
     const url = `${tronWeb.fullNode.host}/v1/accounts/${address}/transactions/trc20?limit=${limit}&contract_address=${USDT_CONTRACT}`;
-    const response = await fetch(url);
+
+    // Include API key header if available
+    const headers: Record<string, string> = {};
+    const apiKey = (tronWeb as any).headers?.["TRON-PRO-API-KEY"];
+    if (apiKey) {
+      headers["TRON-PRO-API-KEY"] = apiKey;
+    }
+
+    const response = await fetch(url, { headers });
+
+    if (!response.ok) {
+      console.error(`TronGrid API error: HTTP ${response.status} for ${address}`);
+      return [];
+    }
+
     const data = (await response.json()) as { data?: Array<Record<string, any>> };
 
-    if (!data.data) return [];
+    if (!data.data || !Array.isArray(data.data)) {
+      console.warn(`TronGrid returned no data for ${address}:`, JSON.stringify(data).slice(0, 200));
+      return [];
+    }
+
+    console.log(`TronGrid: ${data.data.length} TRC20 transactions for ${address.slice(0, 10)}...`);
 
     // Obtener el bloque actual para calcular confirmaciones reales
     const currentBlock = await tronWeb.trx.getCurrentBlock();
@@ -126,7 +145,7 @@ export async function getTrc20Transactions(
       };
     });
   } catch (error) {
-    console.error("Error getting TRC20 transactions:", error);
+    console.error(`Error getting TRC20 transactions for ${address}:`, error);
     return [];
   }
 }
