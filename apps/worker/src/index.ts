@@ -1,9 +1,28 @@
 import "dotenv/config";
+import { createServer } from "http";
 import { BUSINESS_RULES } from "@novapay/shared";
 import { WalletMonitor } from "./monitors/wallet-monitor";
 import { SweepProcessor } from "./processors/sweep-processor";
 import { PriceUpdater } from "./services/price-updater";
 import { delay } from "@novapay/shared";
+
+// ============================================
+// Health check server for Railway
+// ============================================
+const PORT = process.env.PORT || 3001;
+const healthServer = createServer((req, res) => {
+  if (req.url === "/health" || req.url === "/") {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ status: "ok", service: "novapay-worker" }));
+  } else {
+    res.writeHead(404);
+    res.end();
+  }
+});
+
+healthServer.listen(PORT, () => {
+  console.log(`Health server listening on port ${PORT}`);
+});
 
 console.log("===========================================");
 console.log("  NovaPay Worker - Blockchain Monitor");
