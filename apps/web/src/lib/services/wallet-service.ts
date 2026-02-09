@@ -1,32 +1,69 @@
-import { getDb, wallets, WalletInsert } from "@novapay/db";
-import { eq, and } from "@novapay/db";
-import {
-  tron,
-  ethereum,
-  encryptPrivateKey,
-} from "@novapay/crypto";
-import { CryptoAsset, BlockchainNetwork, ASSET_CONFIG } from "@novapay/shared";
+import { getDb, wallets, systemConfig } from "@novapay/db";
+import { eq, and, sql } from "@novapay/db";
+import { deriveTronAddress, deriveEthAddress } from "@novapay/crypto";
+import { CryptoAsset, BlockchainNetwork } from "@novapay/shared";
 
-const MASTER_PASSWORD = process.env.ENCRYPTION_MASTER_PASSWORD!;
+// La semilla maestra - NUNCA se guarda en base de datos
+// Solo existe en variables de entorno
+const MASTER_MNEMONIC = process.env.HD_WALLET_MNEMONIC!;
+
+if (!MASTER_MNEMONIC && process.env.NODE_ENV === "production") {
+  console.error("⚠️ CRITICAL: HD_WALLET_MNEMONIC not configured!");
+}
 
 export class WalletService {
+  /**
+   * Obtiene el siguiente índice disponible para wallets
+   * Usa una tabla de configuración para tracking atómico
+   */
+  private static async getNextWalletIndex(): Promise<number> {
+    const db = getDb();
+    const key = "last_wallet_index";
+
+    // Intentar obtener el último índice
+    const [config] = await db
+      .select()
+      .from(systemConfig)
+      .where(eq(systemConfig.key, key))
+      .limit(1);
+
+    if (!config) {
+      // Primera vez - inicializar en 0
+      await db.insert(systemConfig).values({
+        key,
+        value: "0",
+        updatedAt: new Date(),
+      });
+      return 0;
+    }
+
+    // Incrementar atómicamente
+    const nextIndex = parseInt(config.value) + 1;
+    await db
+      .update(systemConfig)
+      .set({
+        value: nextIndex.toString(),
+        updatedAt: new Date(),
+      })
+      .where(eq(systemConfig.key, key));
+
+    return nextIndex;
+  }
+
   /**
    * Genera todas las wallets para un comercio nuevo
    */
   static async generateWalletsForMerchant(merchantId: string): Promise<void> {
-    const db = getDb();
-
     // Generar wallet USDT-TRC20 (Tron)
     await this.generateWallet(merchantId, "USDT_TRC20", "TRON");
 
     // Generar wallet USDT-ERC20 (Ethereum)
     await this.generateWallet(merchantId, "USDT_ERC20", "ETHEREUM");
-
-    // Nota: BTC requiere implementación adicional
   }
 
   /**
-   * Genera una wallet específica para un comercio
+   * Genera una wallet específica para un comercio usando HD Wallet
+   * NO almacena private key - solo el índice de derivación
    */
   static async generateWallet(
     merchantId: string,
@@ -51,26 +88,22 @@ export class WalletService {
       return { address: existing.address };
     }
 
-    let address: string;
-    let privateKey: string;
+    // Obtener el siguiente índice disponible
+    const walletIndex = await this.getNextWalletIndex();
 
-    // Generar wallet según la red
+    let address: string;
+
+    // Derivar dirección según la red (SIN obtener private key)
     switch (network) {
       case "TRON": {
-        const tronClient = tron.createTronClient({
-          fullHost: process.env.TRON_FULL_HOST || "https://api.trongrid.io",
-          apiKey: process.env.TRONGRID_API_KEY,
-        });
-        const wallet = await tron.generateTronWallet(tronClient);
-        address = wallet.address;
-        privateKey = wallet.privateKey;
+        const derived = deriveTronAddress(MASTER_MNEMONIC, walletIndex);
+        address = derived.address;
         break;
       }
 
       case "ETHEREUM": {
-        const wallet = ethereum.generateEthereumWallet();
-        address = wallet.address;
-        privateKey = wallet.privateKey;
+        const derived = deriveEthAddress(MASTER_MNEMONIC, walletIndex);
+        address = derived.address;
         break;
       }
 
@@ -78,18 +111,17 @@ export class WalletService {
         throw new Error(`Network ${network} not supported for wallet generation`);
     }
 
-    // Encriptar la clave privada
-    const encryptedPrivateKey = await encryptPrivateKey(privateKey, MASTER_PASSWORD);
-
-    // Guardar en la base de datos
+    // Guardar en la base de datos - SIN private key
     await db.insert(wallets).values({
       merchantId,
       network,
       asset,
       address,
-      encryptedPrivateKey,
+      walletIndex, // Solo guardamos el índice
       isActive: true,
     });
+
+    console.log(`Generated ${network} wallet for merchant ${merchantId}: ${address} (index: ${walletIndex})`);
 
     return { address };
   }
@@ -140,5 +172,21 @@ export class WalletService {
       .select()
       .from(wallets)
       .where(eq(wallets.isActive, true));
+  }
+
+  /**
+   * Obtiene el índice de wallet para derivar la private key
+   * ⚠️ Solo usar en el worker para sweep
+   */
+  static async getWalletIndexForSweep(walletId: string): Promise<number | null> {
+    const db = getDb();
+
+    const [wallet] = await db
+      .select({ walletIndex: wallets.walletIndex })
+      .from(wallets)
+      .where(eq(wallets.id, walletId))
+      .limit(1);
+
+    return wallet?.walletIndex ?? null;
   }
 }

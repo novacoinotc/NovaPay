@@ -58,3 +58,6 @@ export type PriceHistorySelect = typeof schema.priceHistory.$inferSelect;
 
 export type ApiKeyInsert = typeof schema.apiKeys.$inferInsert;
 export type ApiKeySelect = typeof schema.apiKeys.$inferSelect;
+
+export type SystemConfigInsert = typeof schema.systemConfig.$inferInsert;
+export type SystemConfigSelect = typeof schema.systemConfig.$inferSelect;

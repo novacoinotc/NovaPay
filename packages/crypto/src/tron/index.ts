@@ -217,3 +217,6 @@ export async function sweepUsdt(
 export function isValidTronAddress(address: string): boolean {
   return TronWeb.isAddress(address);
 }
+
+// Re-export energy manager
+export * from "./energy-manager";

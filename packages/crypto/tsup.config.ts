@@ -7,6 +7,7 @@ export default defineConfig({
     "src/ethereum/index.ts",
     "src/encryption/index.ts",
     "src/prices/index.ts",
+    "src/hd-wallet/index.ts",
   ],
   format: ["esm"],
   dts: true,

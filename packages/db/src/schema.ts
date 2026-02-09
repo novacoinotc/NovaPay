@@ -112,8 +112,12 @@ export const wallets = pgTable(
     asset: cryptoAssetEnum("asset").notNull(),
     address: varchar("address", { length: 100 }).notNull(),
 
-    // Clave privada encriptada (AES-256-GCM)
-    encryptedPrivateKey: text("encrypted_private_key").notNull(),
+    // Índice HD Wallet - NO guardamos private key
+    // La key se deriva: master_seed + walletIndex = private_key
+    walletIndex: integer("wallet_index").notNull(),
+
+    // Legacy: campo para migración (eliminar después)
+    encryptedPrivateKey: text("encrypted_private_key"),
 
     isActive: boolean("is_active").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -128,6 +132,7 @@ export const wallets = pgTable(
       table.asset
     ),
     activeIdx: index("wallets_active_idx").on(table.isActive),
+    walletIndexIdx: index("wallets_wallet_index_idx").on(table.walletIndex),
   })
 );
 
@@ -296,6 +301,18 @@ export const apiKeys = pgTable(
     keyHashIdx: index("api_keys_key_hash_idx").on(table.keyHash),
   })
 );
+
+// ============================================================
+// SYSTEM CONFIG (para tracking de índices HD wallet, etc.)
+// ============================================================
+
+export const systemConfig = pgTable("system_config", {
+  key: varchar("key", { length: 100 }).primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
 
 // ============================================================
 // RELATIONS

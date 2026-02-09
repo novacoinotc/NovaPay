@@ -1,8 +1,17 @@
 import { getDb, deposits, wallets, hotWalletTransactions } from "@novapay/db";
-import { eq } from "drizzle-orm";
+import { eq } from "@novapay/db";
 import { ASSET_CONFIG } from "@novapay/shared";
-import { tron, ethereum, decryptPrivateKey } from "@novapay/crypto";
+import {
+  tron,
+  ethereum,
+  deriveTronWalletWithKey,
+  deriveEthWalletWithKey,
+} from "@novapay/crypto";
 import { notifyApi } from "../services/api-client";
+
+// Master mnemonic para derivar keys - SOLO EN MEMORIA
+const MASTER_MNEMONIC = process.env.HD_WALLET_MNEMONIC!;
+const MASTER_PRIVATE_KEY = process.env.HOT_WALLET_PRIVATE_KEY!;
 
 export class SweepProcessor {
   private tronClient: ReturnType<typeof tron.createTronClient> | null = null;
@@ -10,6 +19,16 @@ export class SweepProcessor {
 
   constructor() {
     this.initializeClients();
+    this.validateConfig();
+  }
+
+  private validateConfig() {
+    if (!MASTER_MNEMONIC) {
+      console.warn("⚠️ HD_WALLET_MNEMONIC not configured - sweeps will fail");
+    }
+    if (!MASTER_PRIVATE_KEY) {
+      console.warn("⚠️ HOT_WALLET_PRIVATE_KEY not configured - energy delegation will fail");
+    }
   }
 
   private initializeClients() {
@@ -53,7 +72,7 @@ export class SweepProcessor {
   }
 
   /**
-   * Realiza el sweep de un depósito específico
+   * Realiza el sweep de un depósito específico usando HD Wallet
    */
   private async sweepDeposit(
     deposit: typeof deposits.$inferSelect
@@ -68,6 +87,12 @@ export class SweepProcessor {
 
     if (!wallet) {
       console.error(`Wallet not found for deposit ${deposit.id}`);
+      return;
+    }
+
+    // Verificar que tenemos el índice de la wallet
+    if (wallet.walletIndex === null || wallet.walletIndex === undefined) {
+      console.error(`Wallet ${wallet.id} does not have walletIndex (legacy wallet?)`);
       return;
     }
 
@@ -89,17 +114,6 @@ export class SweepProcessor {
       .set({ status: "SWEEPING" })
       .where(eq(deposits.id, deposit.id));
 
-    // Desencriptar private key
-    const masterPassword = process.env.ENCRYPTION_MASTER_PASSWORD;
-    if (!masterPassword) {
-      throw new Error("ENCRYPTION_MASTER_PASSWORD not set");
-    }
-
-    const privateKey = await decryptPrivateKey(
-      wallet.encryptedPrivateKey,
-      masterPassword
-    );
-
     // Hot wallet destino
     const hotWalletAddress = this.getHotWalletAddress(deposit.network);
     if (!hotWalletAddress) {
@@ -108,23 +122,19 @@ export class SweepProcessor {
 
     let result: { success: boolean; txHash?: string; error?: string };
 
-    // Ejecutar sweep según la red
+    // Ejecutar sweep según la red usando HD Wallet + Energy Delegation
     switch (deposit.network) {
       case "TRON":
-        if (!this.tronClient) throw new Error("Tron client not initialized");
-        result = await tron.sweepUsdt(
-          this.tronClient,
-          privateKey,
+        result = await this.sweepTronWithHDWallet(
+          wallet.walletIndex,
           hotWalletAddress,
           deposit.amountCrypto
         );
         break;
 
       case "ETHEREUM":
-        if (!this.ethProvider) throw new Error("Ethereum provider not initialized");
-        result = await ethereum.sweepUsdt(
-          this.ethProvider,
-          privateKey,
+        result = await this.sweepEthWithHDWallet(
+          wallet.walletIndex,
           hotWalletAddress,
           deposit.amountCrypto
         );
@@ -175,12 +185,95 @@ export class SweepProcessor {
   }
 
   /**
+   * Sweep en Tron usando HD Wallet + Energy Delegation
+   * La private key solo existe en memoria durante el sweep
+   */
+  private async sweepTronWithHDWallet(
+    walletIndex: number,
+    hotWalletAddress: string,
+    amount: string
+  ): Promise<{ success: boolean; txHash?: string; error?: string }> {
+    if (!this.tronClient) {
+      return { success: false, error: "Tron client not initialized" };
+    }
+
+    if (!MASTER_MNEMONIC) {
+      return { success: false, error: "HD_WALLET_MNEMONIC not configured" };
+    }
+
+    if (!MASTER_PRIVATE_KEY) {
+      return { success: false, error: "HOT_WALLET_PRIVATE_KEY not configured" };
+    }
+
+    try {
+      // Derivar private key en memoria (nunca se guarda)
+      const derivedWallet = deriveTronWalletWithKey(MASTER_MNEMONIC, walletIndex);
+      console.log(`Derived wallet ${walletIndex}: ${derivedWallet.address}`);
+
+      // Usar energy delegation del master wallet
+      const result = await tron.sweepWithMasterEnergy(
+        this.tronClient,
+        MASTER_PRIVATE_KEY,
+        derivedWallet.privateKey,
+        hotWalletAddress,
+        amount
+      );
+
+      // La key se garbage collecta al salir del scope
+      return result;
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.message || "Unknown error during Tron sweep",
+      };
+    }
+  }
+
+  /**
+   * Sweep en Ethereum usando HD Wallet
+   */
+  private async sweepEthWithHDWallet(
+    walletIndex: number,
+    hotWalletAddress: string,
+    amount: string
+  ): Promise<{ success: boolean; txHash?: string; error?: string }> {
+    if (!this.ethProvider) {
+      return { success: false, error: "Ethereum provider not initialized" };
+    }
+
+    if (!MASTER_MNEMONIC) {
+      return { success: false, error: "HD_WALLET_MNEMONIC not configured" };
+    }
+
+    try {
+      // Derivar private key en memoria
+      const derivedWallet = deriveEthWalletWithKey(MASTER_MNEMONIC, walletIndex);
+      console.log(`Derived wallet ${walletIndex}: ${derivedWallet.address}`);
+
+      // Ejecutar sweep
+      const result = await ethereum.sweepUsdt(
+        this.ethProvider,
+        derivedWallet.privateKey,
+        hotWalletAddress,
+        amount
+      );
+
+      return result;
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.message || "Unknown error during Ethereum sweep",
+      };
+    }
+  }
+
+  /**
    * Obtiene la dirección de la hot wallet según la red
    */
   private getHotWalletAddress(network: string): string | undefined {
     switch (network) {
       case "TRON":
-        return process.env.HOT_WALLET_TRON;
+        return process.env.HOT_WALLET_ADDRESS;
       case "ETHEREUM":
         return process.env.HOT_WALLET_ETHEREUM;
       default:
