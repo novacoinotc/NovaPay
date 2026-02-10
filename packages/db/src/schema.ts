@@ -58,6 +58,13 @@ export const withdrawalStatusEnum = pgEnum("withdrawal_status", [
   "FAILED",
 ]);
 
+export const paymentOrderStatusEnum = pgEnum("payment_order_status", [
+  "PENDING",
+  "PAID",
+  "EXPIRED",
+  "CANCELLED",
+]);
+
 // ============================================================
 // MERCHANTS TABLE
 // ============================================================
@@ -323,6 +330,58 @@ export const systemConfig = pgTable("system_config", {
 });
 
 // ============================================================
+// PAYMENT ORDERS (cobros POS)
+// ============================================================
+
+export const paymentOrders = pgTable(
+  "payment_orders",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    merchantId: uuid("merchant_id")
+      .notNull()
+      .references(() => merchants.id, { onDelete: "cascade" }),
+    walletId: uuid("wallet_id")
+      .notNull()
+      .references(() => wallets.id, { onDelete: "cascade" }),
+
+    // Montos
+    amountMxn: decimal("amount_mxn", { precision: 15, scale: 2 }).notNull(),
+    tipMxn: decimal("tip_mxn", { precision: 15, scale: 2 })
+      .notNull()
+      .default("0.00"),
+    totalMxn: decimal("total_mxn", { precision: 15, scale: 2 }).notNull(),
+    amountUsdt: decimal("amount_usdt", { precision: 30, scale: 6 }).notNull(),
+
+    // Info de tipo de cambio
+    exchangeRate: decimal("exchange_rate", { precision: 15, scale: 6 }).notNull(),
+    spread: decimal("spread", { precision: 5, scale: 2 }).notNull(),
+
+    // Estado
+    status: paymentOrderStatusEnum("status").notNull().default("PENDING"),
+    depositId: uuid("deposit_id").references(() => deposits.id, {
+      onDelete: "set null",
+    }),
+
+    // Timestamps
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    paidAt: timestamp("paid_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    merchantIdx: index("payment_orders_merchant_id_idx").on(table.merchantId),
+    walletIdx: index("payment_orders_wallet_id_idx").on(table.walletId),
+    statusIdx: index("payment_orders_status_idx").on(table.status),
+    expiresAtIdx: index("payment_orders_expires_at_idx").on(table.expiresAt),
+    depositIdx: index("payment_orders_deposit_id_idx").on(table.depositId),
+  })
+);
+
+// ============================================================
 // RELATIONS
 // ============================================================
 
@@ -331,6 +390,7 @@ export const merchantsRelations = relations(merchants, ({ many }) => ({
   deposits: many(deposits),
   withdrawals: many(withdrawals),
   apiKeys: many(apiKeys),
+  paymentOrders: many(paymentOrders),
 }));
 
 export const walletsRelations = relations(wallets, ({ one, many }) => ({
@@ -363,5 +423,20 @@ export const apiKeysRelations = relations(apiKeys, ({ one }) => ({
   merchant: one(merchants, {
     fields: [apiKeys.merchantId],
     references: [merchants.id],
+  }),
+}));
+
+export const paymentOrdersRelations = relations(paymentOrders, ({ one }) => ({
+  merchant: one(merchants, {
+    fields: [paymentOrders.merchantId],
+    references: [merchants.id],
+  }),
+  wallet: one(wallets, {
+    fields: [paymentOrders.walletId],
+    references: [wallets.id],
+  }),
+  deposit: one(deposits, {
+    fields: [paymentOrders.depositId],
+    references: [deposits.id],
   }),
 }));

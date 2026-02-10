@@ -9,7 +9,6 @@ interface Wallet {
   asset: string;
   network: string;
   address: string;
-  balance: string;
   isActive: boolean;
 }
 
@@ -228,14 +227,7 @@ export default function WalletsPage() {
                   </div>
                 </div>
 
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="text-xs text-zinc-500">Balance en wallet</p>
-                    <p className="text-lg font-semibold text-zinc-100">
-                      {parseFloat(wallet.balance).toFixed(2)}{" "}
-                      {wallet.asset.split("_")[0]}
-                    </p>
-                  </div>
+                <div className="flex justify-end items-center">
                   <a
                     href={`${assetInfo[wallet.asset]?.explorer || ""}${wallet.address}`}
                     target="_blank"

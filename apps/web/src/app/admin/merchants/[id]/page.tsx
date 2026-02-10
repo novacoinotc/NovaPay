@@ -37,6 +37,7 @@ interface WalletData {
   asset: string;
   address: string;
   isActive: boolean;
+  balance: string;
 }
 
 interface Deposit {
@@ -88,6 +89,8 @@ export default function MerchantDetailPage() {
   const [balanceReason, setBalanceReason] = useState("");
   const [balanceLoading, setBalanceLoading] = useState(false);
   const [balanceResult, setBalanceResult] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [sweeping, setSweeping] = useState<string | null>(null);
+  const [sweepResult, setSweepResult] = useState<{ walletId: string; message: string; type: "success" | "error" } | null>(null);
 
   useEffect(() => {
     fetchMerchant();
@@ -134,6 +137,30 @@ export default function MerchantDetailPage() {
     navigator.clipboard.writeText(text);
     setCopied(text);
     setTimeout(() => setCopied(null), 2000);
+  };
+
+  const sweepWallet = async (walletId: string) => {
+    if (!confirm("¿Sweep manual de USDT a la hot wallet?")) return;
+    setSweeping(walletId);
+    setSweepResult(null);
+    try {
+      const response = await fetch(`/api/admin/merchants/${params.id}/sweep`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ walletId }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setSweepResult({ walletId, message: `Swept ${data.data.amountSwept} USDT - TX: ${data.data.txHash.slice(0, 16)}...`, type: "success" });
+        fetchMerchant();
+      } else {
+        setSweepResult({ walletId, message: data.error?.message || "Error", type: "error" });
+      }
+    } catch (error) {
+      setSweepResult({ walletId, message: "Error de conexión", type: "error" });
+    } finally {
+      setSweeping(null);
+    }
   };
 
   const adjustBalance = async () => {
@@ -308,6 +335,31 @@ export default function MerchantDetailPage() {
                     )}
                   </button>
                 </div>
+                <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/[0.06]">
+                  <div>
+                    <p className="text-xs text-zinc-500">Balance USDT</p>
+                    <p className="text-sm font-semibold text-zinc-100">
+                      {parseFloat(wallet.balance || "0").toFixed(2)} USDT
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => sweepWallet(wallet.id)}
+                    disabled={sweeping === wallet.id || parseFloat(wallet.balance || "0") <= 0}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded-xl text-xs hover:bg-purple-500/20 transition-colors disabled:opacity-50"
+                  >
+                    {sweeping === wallet.id ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <ArrowUpFromLine className="h-3 w-3" />
+                    )}
+                    Sweep manual
+                  </button>
+                </div>
+                {sweepResult?.walletId === wallet.id && (
+                  <p className={`mt-2 text-xs ${sweepResult.type === "success" ? "text-emerald-400" : "text-red-400"}`}>
+                    {sweepResult.message}
+                  </p>
+                )}
               </div>
             ))}
           </div>

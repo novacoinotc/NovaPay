@@ -15,10 +15,12 @@ import {
   Menu,
   X,
   Shield,
+  Calculator,
 } from "lucide-react";
 
 const navigation = [
   { name: "Inicio", href: "/dashboard", icon: Home },
+  { name: "Cobrar", href: "/dashboard/cobrar", icon: Calculator },
   { name: "Wallets", href: "/dashboard/wallets", icon: Wallet },
   { name: "Depósitos", href: "/dashboard/deposits", icon: ArrowDownToLine },
   { name: "Retiros", href: "/dashboard/withdrawals", icon: ArrowUpFromLine },

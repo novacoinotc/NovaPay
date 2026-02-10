@@ -113,6 +113,12 @@ export const BUSINESS_RULES = {
   // Rate limiting
   API_RATE_LIMIT_PER_MINUTE: 60,
   WEBHOOK_RATE_LIMIT_PER_MINUTE: 100,
+
+  // Payment orders (Cobrar/POS)
+  PAYMENT_ORDER_EXPIRY_MINUTES: 30,
+  PAYMENT_ORDER_TOLERANCE_PERCENT: 1,
+  MIN_PAYMENT_ORDER_MXN: 10,
+  MAX_PAYMENT_ORDER_MXN: 500000,
 } as const;
 
 // ============================================================

@@ -74,6 +74,25 @@ export function calculateMxnAmount(
 }
 
 /**
+ * Calcula el monto USDT necesario para cubrir un monto MXN dado
+ * Inverso de calculateMxnAmount: dado MXN, calcula USDT
+ */
+export function calculateUsdtFromMxn(
+  totalMxn: number,
+  exchangeRate: number,
+  spreadPercent: number = BUSINESS_RULES.DEFAULT_SPREAD_PERCENT
+): { amountUsdt: number; effectiveRate: number } {
+  const spreadMultiplier = 1 - spreadPercent / 100;
+  const effectiveRate = exchangeRate * spreadMultiplier;
+  const amountUsdt = totalMxn / effectiveRate;
+
+  return {
+    amountUsdt: Math.round(amountUsdt * 1_000_000) / 1_000_000,
+    effectiveRate: Math.round(effectiveRate * 1_000_000) / 1_000_000,
+  };
+}
+
+/**
  * Formatea cantidad MXN para display
  */
 export function formatMxn(amount: number | string): string {
