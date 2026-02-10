@@ -3,13 +3,13 @@ import { hash } from "bcryptjs";
 import { z } from "zod";
 import { getDb, merchants } from "@novapay/db";
 import { eq } from "@novapay/db";
-import { isValidRfc, isValidClabe } from "@novapay/shared";
+import { isValidClabe } from "@novapay/shared";
 
 const registerSchema = z.object({
   email: z.string().email("Email inválido"),
   password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres"),
   businessName: z.string().min(2, "Nombre del negocio muy corto").max(200),
-  rfc: z.string().refine(isValidRfc, "RFC inválido"),
+  rfc: z.string().optional().default(""),
   phone: z.string().min(10, "Teléfono inválido").max(15),
   clabe: z.string().refine(isValidClabe, "CLABE inválida"),
 });

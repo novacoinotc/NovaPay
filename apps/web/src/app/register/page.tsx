@@ -12,7 +12,6 @@ export default function RegisterPage() {
     password: "",
     confirmPassword: "",
     businessName: "",
-    rfc: "",
     phone: "",
     clabe: "",
   });
@@ -45,7 +44,6 @@ export default function RegisterPage() {
           email: formData.email,
           password: formData.password,
           businessName: formData.businessName,
-          rfc: formData.rfc,
           phone: formData.phone,
           clabe: formData.clabe,
         }),
@@ -109,22 +107,6 @@ export default function RegisterPage() {
                     required
                     className="input-dark"
                     placeholder="Mi Restaurante S.A. de C.V."
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-zinc-300 mb-1.5">
-                    RFC
-                  </label>
-                  <input
-                    type="text"
-                    name="rfc"
-                    value={formData.rfc}
-                    onChange={handleChange}
-                    required
-                    maxLength={13}
-                    className="input-dark uppercase"
-                    placeholder="XAXX010101000"
                   />
                 </div>
 
