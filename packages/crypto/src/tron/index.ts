@@ -178,6 +178,99 @@ export async function getTrc20Transactions(
 }
 
 /**
+ * Obtiene eventos Transfer del contrato USDT (1 API call para todos los wallets)
+ * En vez de consultar N wallets individualmente, consultamos el contrato una sola vez
+ * y filtramos client-side.
+ */
+export async function getContractTransferEvents(
+  tronWeb: TronWeb,
+  minTimestamp: number,
+  limit: number = 200
+): Promise<TronTransaction[]> {
+  try {
+    const allEvents: TronTransaction[] = [];
+    let fingerprint: string | undefined;
+
+    // Include API key header if available
+    const headers: Record<string, string> = {};
+    const apiKey = (tronWeb as any).headers?.["TRON-PRO-API-KEY"];
+    if (apiKey) {
+      headers["TRON-PRO-API-KEY"] = apiKey;
+    }
+
+    // Paginate through events
+    do {
+      let url = `${tronWeb.fullNode.host}/v1/contracts/${USDT_CONTRACT}/events?event_name=Transfer&only_confirmed=true&limit=${limit}&min_timestamp=${minTimestamp}&order_by=block_timestamp,asc`;
+      if (fingerprint) {
+        url += `&fingerprint=${fingerprint}`;
+      }
+
+      // Retry con backoff en caso de 429
+      let response: Response | null = null;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        response = await fetch(url, { headers });
+
+        if (response.status === 429) {
+          const waitMs = 2000 * (attempt + 1);
+          console.warn(`TronGrid 429 on contract events, retry in ${waitMs}ms (attempt ${attempt + 1}/3)`);
+          await new Promise((r) => setTimeout(r, waitMs));
+          continue;
+        }
+        break;
+      }
+
+      if (!response || !response.ok) {
+        console.error(`TronGrid contract events API error: HTTP ${response?.status}`);
+        return allEvents;
+      }
+
+      const data = (await response.json()) as {
+        data?: Array<Record<string, any>>;
+        meta?: { fingerprint?: string };
+      };
+
+      if (!data.data || !Array.isArray(data.data)) {
+        break;
+      }
+
+      for (const event of data.data) {
+        const result = event.result;
+        if (!result) continue;
+
+        // Convert hex addresses to base58
+        const from = TronWeb.address.fromHex(result.from || result[0]);
+        const to = TronWeb.address.fromHex(result.to || result[1]);
+        const value = (result.value || result[2] || "0").toString();
+
+        allEvents.push({
+          txHash: event.transaction_id,
+          from,
+          to,
+          amount: fromBaseUnits(value, DECIMALS),
+          confirmations: NETWORK_CONFIG.TRON.requiredConfirmations, // already confirmed (only_confirmed=true)
+          timestamp: event.block_timestamp,
+        });
+      }
+
+      // Check for more pages
+      fingerprint = data.meta?.fingerprint;
+      if (!fingerprint || data.data.length < limit) {
+        break;
+      }
+    } while (true);
+
+    if (allEvents.length > 0) {
+      console.log(`TronGrid contract events: ${allEvents.length} Transfer events since ${new Date(minTimestamp).toISOString()}`);
+    }
+
+    return allEvents;
+  } catch (error) {
+    console.error("Error getting contract transfer events:", error);
+    return [];
+  }
+}
+
+/**
  * Verifica si una transacción está confirmada
  */
 export async function isTransactionConfirmed(

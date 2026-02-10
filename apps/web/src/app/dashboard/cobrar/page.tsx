@@ -14,6 +14,9 @@ import {
 import QRCode from "qrcode";
 
 type ViewState = "calculator" | "qr" | "success";
+type TipMode = "fixed" | "percent";
+
+const TIP_PERCENT_OPTIONS = [10, 15, 20];
 
 interface PaymentOrder {
   id: string;
@@ -29,6 +32,8 @@ interface PaymentOrder {
   walletAddress: string;
   walletNetwork: string;
   createdAt: string;
+  employeeId?: string | null;
+  employeeName?: string | null;
 }
 
 const statusConfig: Record<string, { label: string; color: string }> = {
@@ -43,6 +48,8 @@ export default function CobrarPage() {
   const [amount, setAmount] = useState("");
   const [tip, setTip] = useState("");
   const [showTip, setShowTip] = useState(false);
+  const [tipMode, setTipMode] = useState<TipMode>("fixed");
+  const [tipPercent, setTipPercent] = useState("");
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
   const [currentOrder, setCurrentOrder] = useState<PaymentOrder | null>(null);
@@ -128,12 +135,22 @@ export default function CobrarPage() {
     setError("");
 
     try {
+      let computedTip = 0;
+      if (showTip) {
+        if (tipMode === "percent") {
+          const pct = parseFloat(tipPercent) || 0;
+          computedTip = Math.round(amountMxn * pct) / 100;
+        } else {
+          computedTip = parseFloat(tip) || 0;
+        }
+      }
+
       const res = await fetch("/api/cobros", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           amountMxn,
-          tipMxn: showTip ? parseFloat(tip) || 0 : 0,
+          tipMxn: computedTip,
         }),
       });
 
@@ -171,6 +188,8 @@ export default function CobrarPage() {
     setAmount("");
     setTip("");
     setShowTip(false);
+    setTipMode("fixed");
+    setTipPercent("");
     setCurrentOrder(null);
     setError("");
   };
@@ -181,7 +200,13 @@ export default function CobrarPage() {
     return `${m}:${s.toString().padStart(2, "0")}`;
   };
 
-  const totalMxn = (parseFloat(amount) || 0) + (showTip ? parseFloat(tip) || 0 : 0);
+  const amountNum = parseFloat(amount) || 0;
+  const tipMxn = showTip
+    ? tipMode === "percent"
+      ? Math.round(amountNum * (parseFloat(tipPercent) || 0)) / 100
+      : parseFloat(tip) || 0
+    : 0;
+  const totalMxn = amountNum + tipMxn;
 
   return (
     <div className="animate-fade-in">
@@ -216,24 +241,79 @@ export default function CobrarPage() {
 
             {showTip ? (
               <div className="mt-3">
-                <div className="flex items-center justify-between mb-1">
-                  <p className="text-xs text-zinc-400">Propina</p>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs text-zinc-400">Propina{tipMxn > 0 && ` ($${tipMxn.toFixed(2)})`}</p>
                   <button
-                    onClick={() => { setShowTip(false); setTip(""); }}
+                    onClick={() => { setShowTip(false); setTip(""); setTipPercent(""); setTipMode("fixed"); }}
                     className="text-xs text-zinc-500 hover:text-zinc-300"
                   >
                     Quitar
                   </button>
                 </div>
-                <input
-                  type="number"
-                  value={tip}
-                  onChange={(e) => setTip(e.target.value)}
-                  placeholder="0.00"
-                  className="input-dark text-center w-full"
-                  min="0"
-                  step="0.01"
-                />
+
+                {/* Tabs: Monto fijo | Porcentaje */}
+                <div className="flex rounded-lg bg-white/[0.04] border border-white/[0.06] p-0.5 mb-3">
+                  <button
+                    onClick={() => { setTipMode("fixed"); setTipPercent(""); }}
+                    className={`flex-1 text-xs py-1.5 rounded-md transition-all ${
+                      tipMode === "fixed"
+                        ? "bg-primary-500/20 text-primary-300 font-medium"
+                        : "text-zinc-500 hover:text-zinc-300"
+                    }`}
+                  >
+                    Monto fijo
+                  </button>
+                  <button
+                    onClick={() => { setTipMode("percent"); setTip(""); }}
+                    className={`flex-1 text-xs py-1.5 rounded-md transition-all ${
+                      tipMode === "percent"
+                        ? "bg-primary-500/20 text-primary-300 font-medium"
+                        : "text-zinc-500 hover:text-zinc-300"
+                    }`}
+                  >
+                    Porcentaje
+                  </button>
+                </div>
+
+                {tipMode === "fixed" ? (
+                  <input
+                    type="number"
+                    value={tip}
+                    onChange={(e) => setTip(e.target.value)}
+                    placeholder="0.00"
+                    className="input-dark text-center w-full"
+                    min="0"
+                    step="0.01"
+                  />
+                ) : (
+                  <>
+                    <div className="flex gap-2 mb-2">
+                      {TIP_PERCENT_OPTIONS.map((pct) => (
+                        <button
+                          key={pct}
+                          onClick={() => setTipPercent(String(pct))}
+                          className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all border ${
+                            tipPercent === String(pct)
+                              ? "bg-primary-500/20 border-primary-500/30 text-primary-300"
+                              : "bg-white/[0.04] border-white/[0.06] text-zinc-400 hover:bg-white/[0.08]"
+                          }`}
+                        >
+                          {pct}%
+                        </button>
+                      ))}
+                    </div>
+                    <input
+                      type="number"
+                      value={tipPercent}
+                      onChange={(e) => setTipPercent(e.target.value)}
+                      placeholder="% personalizado"
+                      className="input-dark text-center w-full"
+                      min="0"
+                      max="100"
+                      step="1"
+                    />
+                  </>
+                )}
               </div>
             ) : (
               <button
@@ -286,6 +366,9 @@ export default function CobrarPage() {
                           day: "2-digit",
                           month: "short",
                         })}
+                        {order.employeeName && (
+                          <span className="text-zinc-600"> &middot; {order.employeeName}</span>
+                        )}
                       </p>
                     </div>
                     <span

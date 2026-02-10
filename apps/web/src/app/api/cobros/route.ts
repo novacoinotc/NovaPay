@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { getDb, merchants, wallets, paymentOrders, eq, desc, and } from "@novapay/db";
+import { getDb, merchants, wallets, paymentOrders, employees, eq, desc, and } from "@novapay/db";
 import { getQuote } from "@novapay/crypto";
 import { calculateUsdtFromMxn, BUSINESS_RULES, CryptoAsset } from "@novapay/shared";
 import { z } from "zod";
@@ -93,10 +93,11 @@ export async function POST(request: NextRequest) {
         exchangeRate: quote.priceMxn.toFixed(6),
         spread: spreadPercent.toFixed(2),
         expiresAt,
+        employeeId: session.user.employeeId || null,
       })
       .returning();
 
-    console.log(`Payment order created: ${order.id} - $${totalMxn} MXN = ${amountUsdt.toFixed(6)} USDT`);
+    console.log(`Payment order created: ${order.id} - $${totalMxn} MXN = ${amountUsdt.toFixed(6)} USDT${session.user.employeeId ? ` by employee ${session.user.employeeName}` : ""}`);
 
     return NextResponse.json({
       success: true,
@@ -138,12 +139,22 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1");
     const pageSize = parseInt(searchParams.get("pageSize") || "20");
     const status = searchParams.get("status");
+    const employeeFilter = searchParams.get("employeeId");
     const offset = (page - 1) * pageSize;
 
     // Build where conditions
     const conditions = [eq(paymentOrders.merchantId, session.user.id)];
+
     if (status) {
       conditions.push(eq(paymentOrders.status, status as any));
+    }
+
+    // Si es empleado CASHIER, solo ver sus propios cobros
+    if (session.user.employeeId && session.user.employeeRole === "CASHIER") {
+      conditions.push(eq(paymentOrders.employeeId, session.user.employeeId));
+    } else if (employeeFilter) {
+      // Owner or MANAGER filtering by specific employee
+      conditions.push(eq(paymentOrders.employeeId, employeeFilter));
     }
 
     const orders = await db
@@ -159,9 +170,12 @@ export async function GET(request: NextRequest) {
         paidAt: paymentOrders.paidAt,
         createdAt: paymentOrders.createdAt,
         walletAddress: wallets.address,
+        employeeId: paymentOrders.employeeId,
+        employeeName: employees.name,
       })
       .from(paymentOrders)
       .leftJoin(wallets, eq(paymentOrders.walletId, wallets.id))
+      .leftJoin(employees, eq(paymentOrders.employeeId, employees.id))
       .where(and(...conditions))
       .orderBy(desc(paymentOrders.createdAt))
       .limit(pageSize)

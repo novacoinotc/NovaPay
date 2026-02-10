@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { getDb, paymentOrders, wallets, eq, and } from "@novapay/db";
+import { getDb, paymentOrders, wallets, employees, eq, and } from "@novapay/db";
 
 export async function GET(
   request: NextRequest,
@@ -36,9 +36,12 @@ export async function GET(
         createdAt: paymentOrders.createdAt,
         walletAddress: wallets.address,
         walletNetwork: wallets.network,
+        employeeId: paymentOrders.employeeId,
+        employeeName: employees.name,
       })
       .from(paymentOrders)
       .leftJoin(wallets, eq(paymentOrders.walletId, wallets.id))
+      .leftJoin(employees, eq(paymentOrders.employeeId, employees.id))
       .where(eq(paymentOrders.id, params.id))
       .limit(1);
 

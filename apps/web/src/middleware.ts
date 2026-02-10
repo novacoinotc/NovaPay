@@ -12,13 +12,39 @@ export default withAuth(
       }
     }
 
+    // Restricciones para empleados
+    if (token?.employeeId) {
+      const path = req.nextUrl.pathname;
+
+      // Rutas permitidas para CASHIER
+      const cashierAllowed = [
+        "/dashboard/cobrar",
+        "/api/cobros",
+        "/api/auth",
+      ];
+
+      // Rutas adicionales para MANAGER
+      const managerExtra = [
+        "/dashboard/cobros-historial",
+      ];
+
+      const isAllowed =
+        path === "/dashboard" || // allow base dashboard redirect
+        cashierAllowed.some((p) => path.startsWith(p)) ||
+        (token.employeeRole === "MANAGER" && managerExtra.some((p) => path.startsWith(p)));
+
+      if (!isAllowed) {
+        return NextResponse.redirect(new URL("/dashboard/cobrar", req.url));
+      }
+    }
+
     return NextResponse.next();
   },
   {
     callbacks: {
       authorized: ({ token, req }) => {
         // Rutas públicas que no requieren autenticación
-        const publicPaths = ["/", "/login", "/register", "/api/auth", "/api/health"];
+        const publicPaths = ["/", "/login", "/register", "/employee-login", "/api/auth", "/api/health"];
         const isPublicPath = publicPaths.some((path) =>
           req.nextUrl.pathname.startsWith(path)
         );

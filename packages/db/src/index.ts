@@ -64,3 +64,6 @@ export type SystemConfigSelect = typeof schema.systemConfig.$inferSelect;
 
 export type PaymentOrderInsert = typeof schema.paymentOrders.$inferInsert;
 export type PaymentOrderSelect = typeof schema.paymentOrders.$inferSelect;
+
+export type EmployeeInsert = typeof schema.employees.$inferInsert;
+export type EmployeeSelect = typeof schema.employees.$inferSelect;

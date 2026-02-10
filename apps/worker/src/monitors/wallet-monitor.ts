@@ -4,19 +4,20 @@ import {
   BlockchainNetwork,
   NETWORK_CONFIG,
   ASSET_CONFIG,
-  delay,
+  BUSINESS_RULES,
 } from "@novapay/shared";
 import { tron, ethereum } from "@novapay/crypto";
 import { notifyApi } from "../services/api-client";
 
-const DELAY_BETWEEN_WALLETS_MS = 2000; // 2s entre cada wallet para evitar rate limit
-
 export class WalletMonitor {
   private tronClient: ReturnType<typeof tron.createTronClient> | null = null;
   private ethProvider: ReturnType<typeof ethereum.createEthereumProvider> | null = null;
+  private lastPollTimestamp: number;
 
   constructor() {
     this.initializeClients();
+    // Start looking back from CONTRACT_EVENTS_LOOKBACK_MS ago
+    this.lastPollTimestamp = Date.now() - BUSINESS_RULES.CONTRACT_EVENTS_LOOKBACK_MS;
   }
 
   private initializeClients() {
@@ -38,6 +39,7 @@ export class WalletMonitor {
 
   /**
    * Verifica todas las wallets activas por nuevos depósitos
+   * Usa contract event monitoring: 1 API call para TRON en vez de N
    */
   async checkAllWallets(): Promise<void> {
     const db = getDb();
@@ -48,31 +50,17 @@ export class WalletMonitor {
       .from(wallets)
       .where(eq(wallets.isActive, true));
 
-    // Filtrar solo TRON (ETH no tiene provider configurado)
     const tronWallets = activeWallets.filter((w) => w.network === "TRON");
     const ethWallets = activeWallets.filter((w) => w.network === "ETHEREUM");
 
     console.log(`Checking ${tronWallets.length} TRON + ${ethWallets.length} ETH wallets...`);
 
-    // Cachear bloque actual una sola vez para todo el ciclo
-    let cachedBlockNumber: number | undefined;
+    // TRON: Contract event monitoring (1 API call)
     if (this.tronClient && tronWallets.length > 0) {
-      cachedBlockNumber = await tron.getCurrentBlockNumber(this.tronClient);
+      await this.checkTronContractEvents(tronWallets);
     }
 
-    for (let i = 0; i < tronWallets.length; i++) {
-      try {
-        await this.checkTronWallet(tronWallets[i], cachedBlockNumber);
-      } catch (error) {
-        console.error(`Error checking wallet ${tronWallets[i].address}:`, error);
-      }
-      // Delay entre wallets para evitar rate limit (excepto la última)
-      if (i < tronWallets.length - 1) {
-        await delay(DELAY_BETWEEN_WALLETS_MS);
-      }
-    }
-
-    // ETH wallets (sin delay extra, usan RPC diferente)
+    // ETH wallets (sin cambios, usan RPC diferente)
     for (const wallet of ethWallets) {
       try {
         await this.checkEthereumWallet(wallet);
@@ -83,109 +71,110 @@ export class WalletMonitor {
   }
 
   /**
-   * Verifica una wallet Tron (USDT-TRC20)
+   * Verifica depósitos TRON usando contract events (1 API call)
    */
-  private async checkTronWallet(
-    wallet: typeof wallets.$inferSelect,
-    cachedBlockNumber?: number
+  private async checkTronContractEvents(
+    tronWallets: (typeof wallets.$inferSelect)[]
   ): Promise<void> {
-    if (!this.tronClient) {
-      console.warn("Tron client not initialized");
-      return;
+    if (!this.tronClient) return;
+
+    // Build address → wallet lookup map
+    const walletMap = new Map<string, typeof wallets.$inferSelect>();
+    for (const w of tronWallets) {
+      walletMap.set(w.address.toLowerCase(), w);
     }
 
     const db = getDb();
+    const cycleStart = this.lastPollTimestamp;
 
-    // Obtener transacciones recientes (usando bloque cacheado)
-    const transactions = await tron.getTrc20Transactions(
-      this.tronClient,
-      wallet.address,
-      50,
-      cachedBlockNumber
-    );
+    try {
+      // 1 API call: get all USDT Transfer events since lastPollTimestamp
+      const events = await tron.getContractTransferEvents(
+        this.tronClient,
+        cycleStart
+      );
 
-    if (transactions.length === 0) {
-      return; // No transactions found
-    }
+      // Filter: only events where tx.to matches one of our wallets
+      let matchCount = 0;
+      for (const tx of events) {
+        const wallet = walletMap.get(tx.to.toLowerCase());
+        if (!wallet) continue;
 
-    // Filtrar transacciones entrantes (donde 'to' es nuestra wallet)
-    const incomingTxs = transactions.filter(
-      (tx) => tx.to.toLowerCase() === wallet.address.toLowerCase()
-    );
+        matchCount++;
 
-    if (incomingTxs.length > 0) {
-      console.log(`Wallet ${wallet.address}: ${incomingTxs.length} incoming TRC20 txs found`);
-    }
+        // Check if deposit already exists
+        const existing = await db
+          .select()
+          .from(deposits)
+          .where(eq(deposits.txHash, tx.txHash))
+          .limit(1);
 
-    for (const tx of incomingTxs) {
-      // Verificar si ya tenemos este depósito registrado
-      const existing = await db
-        .select()
-        .from(deposits)
-        .where(eq(deposits.txHash, tx.txHash))
-        .limit(1);
+        if (existing.length > 0) {
+          await this.updateConfirmations(existing[0], tx.confirmations);
+          continue;
+        }
 
-      if (existing.length > 0) {
-        // Ya existe, verificar si necesita actualización de confirmaciones
-        await this.updateConfirmations(existing[0], tx.confirmations);
-        continue;
-      }
+        // New deposit detected
+        console.log(`New deposit detected: ${tx.txHash}`);
+        console.log(`  Amount: ${tx.amount} USDT`);
+        console.log(`  Wallet: ${wallet.address}`);
 
-      // Nuevo depósito detectado
-      console.log(`New deposit detected: ${tx.txHash}`);
-      console.log(`  Amount: ${tx.amount} USDT`);
-      console.log(`  Wallet: ${wallet.address}`);
+        // Check minimum amount
+        const minDeposit = parseFloat(ASSET_CONFIG.USDT_TRC20.minDeposit);
+        if (parseFloat(tx.amount) < minDeposit) {
+          console.log(`  Skipping: Below minimum deposit (${minDeposit} USDT)`);
+          continue;
+        }
 
-      // Verificar monto mínimo
-      const minDeposit = parseFloat(ASSET_CONFIG.USDT_TRC20.minDeposit);
-      if (parseFloat(tx.amount) < minDeposit) {
-        console.log(`  Skipping: Below minimum deposit (${minDeposit} USDT)`);
-        continue;
-      }
+        // Already confirmed (only_confirmed=true in API)
+        const alreadyConfirmed = tx.confirmations >= NETWORK_CONFIG.TRON.requiredConfirmations;
 
-      // Verificar si ya tiene suficientes confirmaciones
-      const requiredConfirmations =
-        NETWORK_CONFIG.TRON.requiredConfirmations;
-      const alreadyConfirmed = tx.confirmations >= requiredConfirmations;
+        const [deposit] = await db
+          .insert(deposits)
+          .values({
+            merchantId: wallet.merchantId,
+            walletId: wallet.id,
+            txHash: tx.txHash,
+            network: "TRON",
+            asset: "USDT_TRC20",
+            amountCrypto: tx.amount,
+            confirmations: tx.confirmations,
+            status: alreadyConfirmed ? "CONFIRMED" : "PENDING",
+            ...(alreadyConfirmed ? { confirmedAt: new Date() } : {}),
+          })
+          .returning();
 
-      // Crear registro de depósito
-      const [deposit] = await db
-        .insert(deposits)
-        .values({
-          merchantId: wallet.merchantId,
-          walletId: wallet.id,
+        if (alreadyConfirmed) {
+          console.log(`  Already confirmed with ${tx.confirmations} confirmations`);
+        }
+
+        await notifyApi("deposit-detected", {
+          depositId: deposit.id,
+          walletAddress: wallet.address,
           txHash: tx.txHash,
           network: "TRON",
           asset: "USDT_TRC20",
-          amountCrypto: tx.amount,
-          confirmations: tx.confirmations,
-          status: alreadyConfirmed ? "CONFIRMED" : "PENDING",
-          ...(alreadyConfirmed ? { confirmedAt: new Date() } : {}),
-        })
-        .returning();
-
-      if (alreadyConfirmed) {
-        console.log(`  Already confirmed with ${tx.confirmations} confirmations`);
-      }
-
-      // Notificar a la API
-      await notifyApi("deposit-detected", {
-        depositId: deposit.id,
-        walletAddress: wallet.address,
-        txHash: tx.txHash,
-        network: "TRON",
-        asset: "USDT_TRC20",
-        amount: tx.amount,
-        confirmations: tx.confirmations,
-      });
-
-      if (alreadyConfirmed) {
-        await notifyApi("deposit-confirmed", {
-          depositId: deposit.id,
-          txHash: tx.txHash,
+          amount: tx.amount,
           confirmations: tx.confirmations,
         });
+
+        if (alreadyConfirmed) {
+          await notifyApi("deposit-confirmed", {
+            depositId: deposit.id,
+            txHash: tx.txHash,
+            confirmations: tx.confirmations,
+          });
+        }
       }
+
+      if (matchCount > 0) {
+        console.log(`Contract events: ${events.length} total, ${matchCount} matched our wallets`);
+      }
+
+      // Update lastPollTimestamp on successful cycle
+      this.lastPollTimestamp = Date.now();
+    } catch (error) {
+      console.error("Error in TRON contract event monitoring:", error);
     }
   }
 
@@ -284,7 +273,6 @@ export class WalletMonitor {
   ): Promise<void> {
     if (deposit.status !== "PENDING") return;
     if (newConfirmations < deposit.confirmations) return;
-    // Also check if already has enough confirmations even if count hasn't changed
     const requiredConfs =
       NETWORK_CONFIG[deposit.network as BlockchainNetwork].requiredConfirmations;
     if (newConfirmations === deposit.confirmations && newConfirmations < requiredConfs) return;

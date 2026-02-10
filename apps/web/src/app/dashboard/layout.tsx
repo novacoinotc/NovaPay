@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
@@ -16,15 +16,21 @@ import {
   X,
   Shield,
   Calculator,
+  Users,
 } from "lucide-react";
 
-const navigation = [
+const ownerNavigation = [
   { name: "Inicio", href: "/dashboard", icon: Home },
   { name: "Cobrar", href: "/dashboard/cobrar", icon: Calculator },
   { name: "Wallets", href: "/dashboard/wallets", icon: Wallet },
   { name: "Depósitos", href: "/dashboard/deposits", icon: ArrowDownToLine },
   { name: "Retiros", href: "/dashboard/withdrawals", icon: ArrowUpFromLine },
+  { name: "Empleados", href: "/dashboard/employees", icon: Users },
   { name: "Configuración", href: "/dashboard/settings", icon: Settings },
+];
+
+const employeeNavigation = [
+  { name: "Cobrar", href: "/dashboard/cobrar", icon: Calculator },
 ];
 
 export default function DashboardLayout({
@@ -35,6 +41,12 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const { data: session, status } = useSession();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const isEmployee = !!session?.user?.employeeId;
+
+  const navigation = useMemo(() => {
+    return isEmployee ? employeeNavigation : ownerNavigation;
+  }, [isEmployee]);
 
   if (status === "loading") {
     return (
@@ -96,14 +108,18 @@ export default function DashboardLayout({
         <div className="px-4 py-4 border-b border-white/[0.06]">
           <div className="flex items-center gap-3">
             <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary-500 to-primary-300 flex items-center justify-center text-white text-xs font-bold">
-              {session?.user?.businessName?.charAt(0) || "N"}
+              {isEmployee
+                ? session?.user?.employeeName?.charAt(0) || "E"
+                : session?.user?.businessName?.charAt(0) || "N"}
             </div>
             <div className="min-w-0">
               <p className="text-sm font-medium text-zinc-100 truncate">
-                {session?.user?.businessName}
+                {isEmployee ? session?.user?.employeeName : session?.user?.businessName}
               </p>
               <p className="text-xs text-zinc-500 truncate">
-                {session?.user?.email}
+                {isEmployee
+                  ? `${session?.user?.businessName} · ${session?.user?.employeeRole === "MANAGER" ? "Manager" : "Cajero"}`
+                  : session?.user?.email}
               </p>
             </div>
           </div>
@@ -134,7 +150,7 @@ export default function DashboardLayout({
         </nav>
 
         <div className="absolute bottom-0 left-0 right-0 p-3 border-t border-white/[0.06]">
-          {session?.user?.role === "ADMIN" && (
+          {!isEmployee && session?.user?.role === "ADMIN" && (
             <Link
               href="/admin"
               onClick={() => setMobileMenuOpen(false)}
@@ -145,7 +161,7 @@ export default function DashboardLayout({
             </Link>
           )}
           <button
-            onClick={() => signOut({ callbackUrl: "/" })}
+            onClick={() => signOut({ callbackUrl: isEmployee ? "/employee-login" : "/" })}
             className="flex items-center gap-3 px-3 py-2.5 text-red-400 rounded-xl hover:bg-red-500/10 w-full transition-all duration-200"
           >
             <LogOut className="h-5 w-5" />

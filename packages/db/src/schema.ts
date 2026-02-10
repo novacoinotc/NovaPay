@@ -65,6 +65,11 @@ export const paymentOrderStatusEnum = pgEnum("payment_order_status", [
   "CANCELLED",
 ]);
 
+export const employeeRoleEnum = pgEnum("employee_role", [
+  "CASHIER",
+  "MANAGER",
+]);
+
 // ============================================================
 // MERCHANTS TABLE
 // ============================================================
@@ -356,6 +361,11 @@ export const paymentOrders = pgTable(
     exchangeRate: decimal("exchange_rate", { precision: 15, scale: 6 }).notNull(),
     spread: decimal("spread", { precision: 5, scale: 2 }).notNull(),
 
+    // Empleado que generó el cobro (null = dueño)
+    employeeId: uuid("employee_id").references(() => employees.id, {
+      onDelete: "set null",
+    }),
+
     // Estado
     status: paymentOrderStatusEnum("status").notNull().default("PENDING"),
     depositId: uuid("deposit_id").references(() => deposits.id, {
@@ -378,6 +388,35 @@ export const paymentOrders = pgTable(
     statusIdx: index("payment_orders_status_idx").on(table.status),
     expiresAtIdx: index("payment_orders_expires_at_idx").on(table.expiresAt),
     depositIdx: index("payment_orders_deposit_id_idx").on(table.depositId),
+    employeeIdx: index("payment_orders_employee_id_idx").on(table.employeeId),
+  })
+);
+
+// ============================================================
+// EMPLOYEES TABLE (sub-usuarios de un merchant)
+// ============================================================
+
+export const employees = pgTable(
+  "employees",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    merchantId: uuid("merchant_id")
+      .notNull()
+      .references(() => merchants.id, { onDelete: "cascade" }),
+    name: varchar("name", { length: 200 }).notNull(),
+    pin: varchar("pin", { length: 255 }).notNull(),
+    role: employeeRoleEnum("role").notNull().default("CASHIER"),
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    merchantIdx: index("employees_merchant_id_idx").on(table.merchantId),
+    activeIdx: index("employees_active_idx").on(table.isActive),
   })
 );
 
@@ -391,6 +430,7 @@ export const merchantsRelations = relations(merchants, ({ many }) => ({
   withdrawals: many(withdrawals),
   apiKeys: many(apiKeys),
   paymentOrders: many(paymentOrders),
+  employees: many(employees),
 }));
 
 export const walletsRelations = relations(wallets, ({ one, many }) => ({
@@ -439,4 +479,16 @@ export const paymentOrdersRelations = relations(paymentOrders, ({ one }) => ({
     fields: [paymentOrders.depositId],
     references: [deposits.id],
   }),
+  employee: one(employees, {
+    fields: [paymentOrders.employeeId],
+    references: [employees.id],
+  }),
+}));
+
+export const employeesRelations = relations(employees, ({ one, many }) => ({
+  merchant: one(merchants, {
+    fields: [employees.merchantId],
+    references: [merchants.id],
+  }),
+  paymentOrders: many(paymentOrders),
 }));
