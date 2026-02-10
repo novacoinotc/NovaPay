@@ -9,15 +9,19 @@ import {
 import { tron, ethereum } from "@novapay/crypto";
 import { notifyApi } from "../services/api-client";
 
+// Lookback must exceed confirmation time: 20 confirmations * 3s = 60s, use 2x buffer
+const CONFIRMATION_LOOKBACK_MS =
+  NETWORK_CONFIG.TRON.requiredConfirmations *
+  NETWORK_CONFIG.TRON.blockTimeSeconds *
+  1000 *
+  2; // ~120s
+
 export class WalletMonitor {
   private tronClient: ReturnType<typeof tron.createTronClient> | null = null;
   private ethProvider: ReturnType<typeof ethereum.createEthereumProvider> | null = null;
-  private lastPollTimestamp: number;
 
   constructor() {
     this.initializeClients();
-    // Start looking back from CONTRACT_EVENTS_LOOKBACK_MS ago
-    this.lastPollTimestamp = Date.now() - BUSINESS_RULES.CONTRACT_EVENTS_LOOKBACK_MS;
   }
 
   private initializeClients() {
@@ -85,13 +89,16 @@ export class WalletMonitor {
     }
 
     const db = getDb();
-    const cycleStart = this.lastPollTimestamp;
+    // Always look back enough to catch newly confirmed txs
+    // TRON needs ~60s for 20 confirmations; we use 2x buffer (120s)
+    // DB dedup prevents double-processing
+    const minTimestamp = Date.now() - CONFIRMATION_LOOKBACK_MS;
 
     try {
-      // 1 API call: get all USDT Transfer events since lastPollTimestamp
+      // 1 API call: get all USDT Transfer events in lookback window
       const events = await tron.getContractTransferEvents(
         this.tronClient,
-        cycleStart
+        minTimestamp
       );
 
       // Filter: only events where tx.to matches one of our wallets
@@ -170,9 +177,6 @@ export class WalletMonitor {
       if (matchCount > 0) {
         console.log(`Contract events: ${events.length} total, ${matchCount} matched our wallets`);
       }
-
-      // Update lastPollTimestamp on successful cycle
-      this.lastPollTimestamp = Date.now();
     } catch (error) {
       console.error("Error in TRON contract event monitoring:", error);
     }
