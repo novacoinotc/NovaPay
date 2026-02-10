@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getDb, merchants, deposits, withdrawals, wallets, eq, sql, count, and } from "@novapay/db";
+import { tron, ethereum } from "@novapay/crypto";
 
 export async function GET(request: NextRequest) {
   try {
@@ -60,23 +61,49 @@ export async function GET(request: NextRequest) {
       .from(merchants)
       .where(whereClause);
 
-    // Get deposit/withdrawal counts per merchant
+    // Initialize blockchain clients once for all balance queries
+    const tronClient =
+      process.env.TRON_FULL_HOST
+        ? tron.createTronClient({
+            fullHost: process.env.TRON_FULL_HOST,
+            apiKey: process.env.TRONGRID_API_KEY,
+          })
+        : null;
+    const ethProvider =
+      process.env.ETHEREUM_RPC_URL
+        ? ethereum.createEthereumProvider({ rpcUrl: process.env.ETHEREUM_RPC_URL })
+        : null;
+
+    // Get deposit/withdrawal counts + wallet USDT balances per merchant
     const merchantsWithCounts = await Promise.all(
       merchantList.map(async (merchant) => {
-        const [depositCount] = await db
-          .select({ total: count() })
-          .from(deposits)
-          .where(eq(deposits.merchantId, merchant.id));
+        const [[depositCount], [withdrawalCount], merchantWallets] = await Promise.all([
+          db.select({ total: count() }).from(deposits).where(eq(deposits.merchantId, merchant.id)),
+          db.select({ total: count() }).from(withdrawals).where(eq(withdrawals.merchantId, merchant.id)),
+          db.select().from(wallets).where(eq(wallets.merchantId, merchant.id)),
+        ]);
 
-        const [withdrawalCount] = await db
-          .select({ total: count() })
-          .from(withdrawals)
-          .where(eq(withdrawals.merchantId, merchant.id));
+        // Fetch on-chain USDT balance for each wallet
+        let walletUsdtBalance = 0;
+        for (const wallet of merchantWallets) {
+          try {
+            if (wallet.network === "TRON" && tronClient) {
+              const bal = await tron.getUsdtBalance(tronClient, wallet.address);
+              walletUsdtBalance += parseFloat(bal);
+            } else if (wallet.network === "ETHEREUM" && ethProvider) {
+              const bal = await ethereum.getUsdtBalance(ethProvider, wallet.address);
+              walletUsdtBalance += parseFloat(bal);
+            }
+          } catch (error) {
+            console.error(`Error fetching balance for ${wallet.address}:`, error);
+          }
+        }
 
         return {
           ...merchant,
           depositCount: depositCount.total,
           withdrawalCount: withdrawalCount.total,
+          walletUsdtBalance: walletUsdtBalance.toFixed(2),
         };
       })
     );

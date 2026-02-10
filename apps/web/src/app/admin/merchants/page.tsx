@@ -10,6 +10,7 @@ interface Merchant {
   email: string;
   rfc: string;
   balanceMxn: string;
+  walletUsdtBalance: string;
   status: string;
   role: string;
   depositCount: number;
@@ -138,6 +139,9 @@ export default function AdminMerchantsPage() {
                   <th className="text-right text-xs font-medium text-zinc-500 uppercase tracking-wider px-4 sm:px-6 py-3">
                     Balance
                   </th>
+                  <th className="text-right text-xs font-medium text-zinc-500 uppercase tracking-wider px-4 sm:px-6 py-3">
+                    USDT Wallet
+                  </th>
                   <th className="text-center text-xs font-medium text-zinc-500 uppercase tracking-wider px-4 sm:px-6 py-3 hidden md:table-cell">
                     Depósitos
                   </th>
@@ -173,6 +177,13 @@ export default function AdminMerchantsPage() {
                     <td className="px-4 sm:px-6 py-4 text-right">
                       <p className="text-sm font-medium text-zinc-100">
                         ${parseFloat(merchant.balanceMxn).toLocaleString("es-MX", { minimumFractionDigits: 2 })}
+                      </p>
+                    </td>
+                    <td className="px-4 sm:px-6 py-4 text-right">
+                      <p className="text-sm font-medium text-emerald-400">
+                        {parseFloat(merchant.walletUsdtBalance) > 0
+                          ? `${parseFloat(merchant.walletUsdtBalance).toLocaleString("en-US", { minimumFractionDigits: 2 })} USDT`
+                          : "0.00"}
                       </p>
                     </td>
                     <td className="px-4 sm:px-6 py-4 text-center hidden md:table-cell">
