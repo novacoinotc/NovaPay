@@ -126,7 +126,7 @@ function EmployeeLoginForm() {
 
 export default function EmployeeLoginPage() {
   return (
-    <div className="min-h-screen bg-[#070b14] bg-grid flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[#050508] bg-grid flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold gradient-text mb-2">NovaPay</h1>

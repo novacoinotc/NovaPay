@@ -410,7 +410,7 @@ export default function CobrarPage() {
             </p>
 
             {/* QR Code */}
-            <div className="bg-[#0a0f1a] rounded-2xl p-5 inline-block border border-white/[0.06] mb-4">
+            <div className="bg-[#0a0a10] rounded-2xl p-5 inline-block border border-white/[0.06] mb-4">
               {qrDataUrl && (
                 <img src={qrDataUrl} alt="QR" className="w-56 h-56 sm:w-64 sm:h-64" />
               )}

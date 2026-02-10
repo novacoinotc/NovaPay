@@ -48,7 +48,7 @@ export default function AdminOverviewPage() {
       title: "Total Merchants",
       value: stats?.totalMerchants || 0,
       icon: Users,
-      color: "from-blue-500 to-blue-300",
+      color: "from-purple-500 to-purple-300",
     },
     {
       title: "Balance Total Sistema",

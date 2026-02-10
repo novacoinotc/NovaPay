@@ -50,16 +50,16 @@ export default function DashboardLayout({
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen bg-[#070b14] flex items-center justify-center">
+      <div className="min-h-screen bg-[#050508] flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#070b14] bg-grid">
+    <div className="min-h-screen bg-[#050508] bg-grid">
       {/* Mobile header */}
-      <div className="fixed top-0 left-0 right-0 h-16 bg-[#070b14]/95 backdrop-blur-xl border-b border-white/[0.06] z-30 flex items-center px-4 md:hidden">
+      <div className="fixed top-0 left-0 right-0 h-16 bg-[#050508]/95 backdrop-blur-xl border-b border-white/[0.06] z-30 flex items-center px-4 md:hidden">
         <button
           onClick={() => setMobileMenuOpen(true)}
           className="p-2 text-zinc-400 hover:text-zinc-100 transition-colors"
@@ -82,7 +82,7 @@ export default function DashboardLayout({
 
       {/* Sidebar */}
       <div
-        className={`fixed inset-y-0 left-0 w-64 bg-[#070b14]/95 backdrop-blur-xl border-r border-white/[0.06] z-30 transform transition-transform duration-300 ${
+        className={`fixed inset-y-0 left-0 w-64 bg-[#050508]/95 backdrop-blur-xl border-r border-white/[0.06] z-30 transform transition-transform duration-300 ${
           mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
         } md:translate-x-0`}
       >
@@ -173,7 +173,7 @@ export default function DashboardLayout({
       {/* Main content */}
       <div className="md:pl-64">
         {/* Desktop header */}
-        <header className="hidden md:flex bg-[#070b14]/80 backdrop-blur-xl border-b border-white/[0.06] h-16 items-center px-8 sticky top-0 z-10">
+        <header className="hidden md:flex bg-[#050508]/80 backdrop-blur-xl border-b border-white/[0.06] h-16 items-center px-8 sticky top-0 z-10">
           <h1 className="text-lg font-semibold text-zinc-100">
             {navigation.find((n) => pathname.startsWith(n.href))?.name || "Dashboard"}
           </h1>

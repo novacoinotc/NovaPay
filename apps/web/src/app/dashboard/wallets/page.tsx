@@ -87,7 +87,7 @@ export default function WalletsPage() {
       const dataUrl = await QRCode.toDataURL(address, {
         width: 256,
         margin: 2,
-        color: { dark: "#fafafa", light: "#070b14" },
+        color: { dark: "#fafafa", light: "#050508" },
       });
       setQrDataUrl(dataUrl);
     } catch (error) {
@@ -166,7 +166,7 @@ export default function WalletsPage() {
             return (
               <div key={wallet.id} className="glass-card p-4 sm:p-6 relative overflow-hidden">
                 {isEthMaintenance && (
-                  <div className="absolute inset-0 bg-[#070b14]/70 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center">
+                  <div className="absolute inset-0 bg-[#050508]/70 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center">
                     <AlertTriangle className="h-8 w-8 text-amber-400 mb-2" />
                     <p className="text-sm font-medium text-amber-400">En mantenimiento</p>
                     <p className="text-xs text-zinc-500 mt-1">Red Ethereum no disponible</p>
@@ -260,7 +260,7 @@ export default function WalletsPage() {
               <p className="text-sm text-zinc-500 mb-4 text-center">
                 Escanea para depositar
               </p>
-              <div className="bg-[#09090b] rounded-xl p-4 flex items-center justify-center border border-white/[0.06]">
+              <div className="bg-[#0a0a10] rounded-xl p-4 flex items-center justify-center border border-white/[0.06]">
                 {qrDataUrl ? (
                   <img src={qrDataUrl} alt="QR Code" className="w-40 h-40 sm:w-48 sm:h-48" />
                 ) : (
