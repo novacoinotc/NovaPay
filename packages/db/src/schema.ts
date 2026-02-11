@@ -89,7 +89,7 @@ export const merchants = pgTable(
     spreadPercent: decimal("spread_percent", { precision: 5, scale: 2 })
       .notNull()
       .default("3.00"),
-    autoSpeiEnabled: boolean("auto_spei_enabled").notNull().default(false),
+    autoSpeiEnabled: boolean("auto_spei_enabled").notNull().default(true),
 
     // Saldo
     balanceMxn: decimal("balance_mxn", { precision: 15, scale: 2 })

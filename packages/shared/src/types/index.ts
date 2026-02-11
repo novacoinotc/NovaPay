@@ -66,7 +66,7 @@ export const merchantSchema = z.object({
   phone: z.string().min(10).max(15),
   clabe: z.string().length(18),
   spreadPercent: z.string().default("3.00"), // Drizzle returns decimal as string
-  autoSpeiEnabled: z.boolean().default(false),
+  autoSpeiEnabled: z.boolean().default(true),
   balanceMxn: z.string().default("0.00"), // Drizzle returns decimal as string
   status: z.nativeEnum(MerchantStatus).default("PENDING"),
   createdAt: z.date(),
