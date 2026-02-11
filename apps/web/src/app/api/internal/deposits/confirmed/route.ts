@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getDb, deposits, merchants, paymentOrders } from "@novapay/db";
-import { eq, and, sql, gte } from "@novapay/db";
+import { eq, and, sql, gte, ne, isNull } from "@novapay/db";
 import { getQuote } from "@novapay/crypto";
 import { calculateMxnAmount, CryptoAsset, BUSINESS_RULES } from "@novapay/shared";
 import { SpeiService } from "@/lib/services/spei-service";
@@ -77,8 +77,9 @@ export async function POST(request: NextRequest) {
       spreadPercent
     );
 
-    // Actualizar depósito: CONFIRMED + acreditar MXN
-    await db
+    // Actualizar depósito con guard atómico: solo si aún NO ha sido acreditado
+    // Esto previene race conditions si confirmed se llama 2 veces simultáneamente
+    const updatedRows = await db
       .update(deposits)
       .set({
         status: "CREDITED",
@@ -89,7 +90,26 @@ export async function POST(request: NextRequest) {
         exchangeRate: quote.priceMxn.toFixed(6),
         spreadPercent: spreadPercent.toFixed(2),
       })
-      .where(eq(deposits.id, data.depositId));
+      .where(
+        and(
+          eq(deposits.id, data.depositId),
+          ne(deposits.status, "CREDITED"),
+          isNull(deposits.amountMxn)
+        )
+      )
+      .returning({ id: deposits.id });
+
+    // Si no se actualizó ninguna fila, otro proceso ya lo acreditó
+    if (updatedRows.length === 0) {
+      console.log(`Deposit ${data.depositId} already credited by another process, skipping`);
+      return NextResponse.json({
+        success: true,
+        data: {
+          message: "Deposit already credited (concurrent)",
+          status: "CREDITED",
+        },
+      });
+    }
 
     // Incrementar balance del comercio
     await db

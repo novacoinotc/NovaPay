@@ -6,7 +6,7 @@ import * as schema from "./schema";
 export * from "./schema";
 
 // Re-export drizzle-orm utilities to ensure single instance
-export { eq, ne, gt, gte, lt, lte, sql, and, or, desc, asc, count, sum } from "drizzle-orm";
+export { eq, ne, gt, gte, lt, lte, sql, and, or, desc, asc, count, sum, isNull } from "drizzle-orm";
 
 // Tipo del cliente de base de datos
 export type Database = ReturnType<typeof createDb>;

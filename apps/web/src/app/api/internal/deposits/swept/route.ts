@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { getDb, deposits, merchants, hotWalletTransactions } from "@novapay/db";
-import { eq, sql } from "@novapay/db";
-import { getQuote } from "@novapay/crypto";
-import { calculateMxnAmount, CryptoAsset } from "@novapay/shared";
-import { SpeiService } from "@/lib/services/spei-service";
+import { getDb, deposits, hotWalletTransactions } from "@novapay/db";
+import { eq } from "@novapay/db";
 
 const depositSweptSchema = z.object({
   depositId: z.string().uuid(),
@@ -42,32 +39,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (deposit.status === "CREDITED") {
+    // Si ya fue swept, no reprocesar
+    if (deposit.sweepTxHash) {
       return NextResponse.json({
         success: true,
-        data: { message: "Deposit already credited" },
+        data: { message: "Deposit already swept" },
       });
     }
 
-    // Obtener comercio
-    const [merchant] = await db
-      .select()
-      .from(merchants)
-      .where(eq(merchants.id, deposit.merchantId))
-      .limit(1);
-
-    if (!merchant) {
-      return NextResponse.json(
-        { success: false, error: { code: "MERCHANT_NOT_FOUND", message: "Merchant not found" } },
-        { status: 404 }
-      );
-    }
-
-    // Actualizar depósito como swept
+    // Registrar sweep (solo info de barrido, NO acreditar MXN ni disparar SPEI)
+    // La acreditación MXN + auto-SPEI se hace exclusivamente en deposit-confirmed
     await db
       .update(deposits)
       .set({
-        status: "SWEPT",
         sweepTxHash: data.sweepTxHash,
         sweptAt: new Date(),
       })
@@ -83,62 +67,13 @@ export async function POST(request: NextRequest) {
       amount: data.amountSwept,
     });
 
-    // Obtener precio actual y calcular MXN
-    const quote = await getQuote(deposit.asset as CryptoAsset);
-    const spreadPercent = parseFloat(merchant.spreadPercent);
-    const { netMxn } = calculateMxnAmount(
-      deposit.amountCrypto,
-      quote.priceMxn,
-      spreadPercent
-    );
-
-    // Actualizar depósito con MXN y marcar como credited
-    await db
-      .update(deposits)
-      .set({
-        status: "CREDITED",
-        amountMxn: netMxn.toFixed(2),
-        exchangeRate: quote.priceMxn.toFixed(6),
-        spreadPercent: spreadPercent.toFixed(2),
-        creditedAt: new Date(),
-      })
-      .where(eq(deposits.id, data.depositId));
-
-    // Incrementar balance del comercio
-    await db
-      .update(merchants)
-      .set({
-        balanceMxn: sql`${merchants.balanceMxn} + ${netMxn.toFixed(2)}`,
-        updatedAt: new Date(),
-      })
-      .where(eq(merchants.id, merchant.id));
-
-    console.log(`Credited ${netMxn.toFixed(2)} MXN to merchant ${merchant.id} from deposit ${deposit.id}`);
-
-    // Si tiene auto-SPEI activado, crear retiro automático
-    if (merchant.autoSpeiEnabled) {
-      console.log(`Auto-SPEI enabled for merchant ${merchant.id}, creating withdrawal...`);
-
-      // Importar el servicio de crédito para crear el retiro
-      const { CreditService } = await import("@/lib/services/credit-service");
-
-      const withdrawalResult = await CreditService.processWithdrawal(
-        merchant.id,
-        netMxn
-      );
-
-      if (withdrawalResult.success && withdrawalResult.withdrawalId) {
-        // Procesar SPEI inmediatamente
-        await SpeiService.processWithdrawal(withdrawalResult.withdrawalId);
-      }
-    }
+    console.log(`Deposit ${deposit.id} swept (txHash: ${data.sweepTxHash})`);
 
     return NextResponse.json({
       success: true,
       data: {
         depositId: deposit.id,
-        amountMxn: netMxn.toFixed(2),
-        credited: true,
+        swept: true,
       },
     });
   } catch (error) {
