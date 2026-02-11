@@ -57,8 +57,8 @@ export default function SettingsPage() {
     setError("");
     setSuccess(false);
 
-    // Validar CLABE
-    if (!isValidClabe(formData.clabe)) {
+    // Validar CLABE solo si fue modificada
+    if (formData.clabe !== merchant?.clabe && !isValidClabe(formData.clabe)) {
       setError("CLABE inválida. Verifica los 18 dígitos.");
       return;
     }

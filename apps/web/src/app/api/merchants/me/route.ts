@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
 
 const updateSchema = z.object({
   phone: z.string().min(10).max(15).optional(),
-  clabe: z.string().refine(isValidClabe, "CLABE inválida").optional(),
+  clabe: z.string().length(18, "CLABE debe tener 18 dígitos").optional(),
   autoSpeiEnabled: z.boolean().optional(),
 });
 
