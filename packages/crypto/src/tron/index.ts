@@ -58,17 +58,26 @@ export async function generateTronWallet(
  */
 export async function getUsdtBalance(
   tronWeb: TronWeb,
-  address: string
+  address: string,
+  retries = 2
 ): Promise<string> {
-  try {
-    tronWeb.setAddress(address);
-    const contract = await tronWeb.contract().at(USDT_CONTRACT);
-    const balance = await contract.methods.balanceOf(address).call();
-    return fromBaseUnits(balance.toString(), DECIMALS);
-  } catch (error) {
-    console.error("Error getting USDT balance:", error);
-    return "0";
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      tronWeb.setAddress(address);
+      const contract = await tronWeb.contract().at(USDT_CONTRACT);
+      const balance = await contract.methods.balanceOf(address).call();
+      return fromBaseUnits(balance.toString(), DECIMALS);
+    } catch (error: any) {
+      const is429 = error?.response?.status === 429 || error?.message?.includes("429");
+      if (is429 && attempt < retries) {
+        await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+        continue;
+      }
+      console.error("Error getting USDT balance:", error);
+      return "0";
+    }
   }
+  return "0";
 }
 
 /**

@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
         ? ethereum.createEthereumProvider({ rpcUrl: process.env.ETHEREUM_RPC_URL })
         : null;
 
-    // Get deposit/withdrawal counts + wallet USDT balances per merchant
+    // Get deposit/withdrawal counts per merchant (DB queries in parallel - no rate limit issue)
     const merchantsWithCounts = await Promise.all(
       merchantList.map(async (merchant) => {
         const [[depositCount], [withdrawalCount], merchantWallets] = await Promise.all([
@@ -83,30 +83,37 @@ export async function GET(request: NextRequest) {
           db.select().from(wallets).where(eq(wallets.merchantId, merchant.id)),
         ]);
 
-        // Fetch on-chain USDT balance for each wallet
-        let walletUsdtBalance = 0;
-        for (const wallet of merchantWallets) {
-          try {
-            if (wallet.network === "TRON" && tronClient) {
-              const bal = await tron.getUsdtBalance(tronClient, wallet.address);
-              walletUsdtBalance += parseFloat(bal);
-            } else if (wallet.network === "ETHEREUM" && ethProvider) {
-              const bal = await ethereum.getUsdtBalance(ethProvider, wallet.address);
-              walletUsdtBalance += parseFloat(bal);
-            }
-          } catch (error) {
-            console.error(`Error fetching balance for ${wallet.address}:`, error);
-          }
-        }
-
         return {
           ...merchant,
           depositCount: depositCount.total,
           withdrawalCount: withdrawalCount.total,
-          walletUsdtBalance: walletUsdtBalance.toFixed(2),
+          merchantWallets,
+          walletUsdtBalance: "0.00",
         };
       })
     );
+
+    // Fetch on-chain USDT balances SEQUENTIALLY to avoid TronGrid rate limiting
+    const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    for (const m of merchantsWithCounts) {
+      let walletUsdtBalance = 0;
+      for (const wallet of (m as any).merchantWallets) {
+        try {
+          if (wallet.network === "TRON" && tronClient) {
+            const bal = await tron.getUsdtBalance(tronClient, wallet.address);
+            walletUsdtBalance += parseFloat(bal);
+            await delay(350); // Respect TronGrid rate limit
+          } else if (wallet.network === "ETHEREUM" && ethProvider) {
+            const bal = await ethereum.getUsdtBalance(ethProvider, wallet.address);
+            walletUsdtBalance += parseFloat(bal);
+          }
+        } catch (error) {
+          console.error(`Error fetching balance for ${wallet.address}:`, error);
+        }
+      }
+      m.walletUsdtBalance = walletUsdtBalance.toFixed(2);
+      delete (m as any).merchantWallets;
+    }
 
     return NextResponse.json({
       success: true,

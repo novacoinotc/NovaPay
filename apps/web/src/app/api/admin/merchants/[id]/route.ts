@@ -51,29 +51,33 @@ export async function GET(
         .limit(10),
     ]);
 
-    // Fetch on-chain balances for wallets
-    const walletsWithBalances = await Promise.all(
-      merchantWallets.map(async (wallet) => {
-        let balance = "0";
-        try {
-          if (wallet.network === "TRON" && process.env.TRON_FULL_HOST) {
-            const tronClient = tron.createTronClient({
-              fullHost: process.env.TRON_FULL_HOST,
-              apiKey: process.env.TRONGRID_API_KEY,
-            });
-            balance = await tron.getUsdtBalance(tronClient, wallet.address);
-          } else if (wallet.network === "ETHEREUM" && process.env.ETHEREUM_RPC_URL) {
-            const provider = ethereum.createEthereumProvider({
-              rpcUrl: process.env.ETHEREUM_RPC_URL,
-            });
-            balance = await ethereum.getUsdtBalance(provider, wallet.address);
-          }
-        } catch (error) {
-          console.error(`Error fetching balance for ${wallet.address}:`, error);
+    // Fetch on-chain balances for wallets (sequentially to avoid rate limits)
+    const tronClient = process.env.TRON_FULL_HOST
+      ? tron.createTronClient({
+          fullHost: process.env.TRON_FULL_HOST,
+          apiKey: process.env.TRONGRID_API_KEY,
+        })
+      : null;
+    const ethProvider = process.env.ETHEREUM_RPC_URL
+      ? ethereum.createEthereumProvider({ rpcUrl: process.env.ETHEREUM_RPC_URL })
+      : null;
+
+    const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    const walletsWithBalances = [];
+    for (const wallet of merchantWallets) {
+      let balance = "0";
+      try {
+        if (wallet.network === "TRON" && tronClient) {
+          balance = await tron.getUsdtBalance(tronClient, wallet.address);
+          await delay(350);
+        } else if (wallet.network === "ETHEREUM" && ethProvider) {
+          balance = await ethereum.getUsdtBalance(ethProvider, wallet.address);
         }
-        return { ...wallet, balance };
-      })
-    );
+      } catch (error) {
+        console.error(`Error fetching balance for ${wallet.address}:`, error);
+      }
+      walletsWithBalances.push({ ...wallet, balance });
+    }
 
     return NextResponse.json({
       success: true,
